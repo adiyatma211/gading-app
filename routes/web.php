@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HakAksesRoleController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PagesController;
@@ -20,5 +21,8 @@ Route::post('/roles/store',[RolesController::class,'store'])->name('roles.store'
 Route::put('/roles/{id}', [RolesController::class, 'update'])->name('roles.update');
 // Matikan (soft delete) role
 Route::delete('/roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
+
+
+Route::get('/aksesRole/user',[HakAksesRoleController::class,'searchUserName'])->name('user.search.name');
 
 Auth::routes();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Roles;
 use Illuminate\Http\Request;
 
@@ -17,10 +18,14 @@ class PagesController extends Controller
         $getRoles = Roles::where('deleteSts', '0')->orderBy('id', 'desc')->get();
         return view('Pengaturan.RoleAkses.v_roles',compact('getRoles'));
     }
-    public function aksesRole(){
+    public function aksesRole() {
+        $gerUser =  User::with('role')->get();
+        $getRoles = Roles::where('deleteSts', 0)->get();
+        // dd($gerUser);
 
 
-        return view('Pengaturan.RoleAkses.v_aksesrole');
+        return view('Pengaturan.RoleAkses.v_aksesrole', compact('gerUser','getRoles'));
     }
+
 
 }
