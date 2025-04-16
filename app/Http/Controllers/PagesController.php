@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Roles;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 
 class PagesController extends Controller
@@ -12,6 +13,10 @@ class PagesController extends Controller
         return view('Dashboard.v_dash');
     }
 
+    public function produk(){
+        $produk = Produk::with('bahan')->get(); // ambil produk beserta bahan
+        return view('Pengaturan.Produk.v_produk', compact('produk'));
+    }
 
 
     public function roles(){

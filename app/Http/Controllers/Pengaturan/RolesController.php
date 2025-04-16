@@ -17,7 +17,7 @@ class RolesController extends Controller
     {
         try {
             $role = Roles::create([
-                    'roles' => $request->input('role'),
+                    'rolesName' => $request->input('role'),
                     'keterangan' => $request->input('keterangan'),
                     'deleteSts' => '0',
                 ]);
@@ -45,7 +45,7 @@ class RolesController extends Controller
             $role = Roles::findOrFail($id);
 
             $role->update([
-                'roles' => $request->input('role'),
+                'rolesName' => $request->input('role'),
                 'keterangan' => $request->input('keterangan'),
             ]);
 

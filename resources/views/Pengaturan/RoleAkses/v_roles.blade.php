@@ -34,18 +34,18 @@
                                 @foreach ($getRoles as $index => $a)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
-                                        <td>{{ $a->roles }}</td>
+                                        <td>{{ $a->rolesName }}</td>
                                         <td>{{ $a->keterangan }}</td>
                                         <td>
                                             <button class="btn btn-sm btn-warning btn-show-role-modal"
-                                                data-id="{{ $a->id }}" data-role="{{ $a->roles }}"
+                                                data-id="{{ $a->id }}" data-role="{{ $a->rolesName }}"
                                                 data-keterangan="{{ $a->keterangan }}" data-bs-toggle="modal"
                                                 data-bs-target="#exampleModalScrollable">
                                                 Edit
                                             </button>
 
                                             <button class="btn btn-sm btn-danger btn-delete-role"
-                                                data-id="{{ $a->id }}" data-role="{{ $a->roles }}">
+                                                data-id="{{ $a->id }}" data-role="{{ $a->rolesName }}">
                                                 Matikan Role
                                             </button>
                                         </td>

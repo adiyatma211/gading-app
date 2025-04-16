@@ -17,11 +17,15 @@
     <link rel="stylesheet" crossorigin href="{{ asset('dist/assets/compiled/css/iconly.css') }}">
     <link rel="stylesheet"
         href="{{ asset('dist/assets/extensions/datatables.net-bs5/css/dataTables.bootstrap5.min.css') }}">
+
     <link rel="stylesheet" crossorigin href="{{ asset('dist//assets/compiled/css/table-datatable-jquery.css') }}">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 </head>
 
 <body>
-    <script src="{{ asset('dist/assets/extensions/jquery/jquery.min.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="{{ asset('dist/assets/extensions/datatables.net/js/jquery.dataTables.min.js') }}"></script>
     <script src="{{ asset('dist/assets/extensions/datatables.net-bs5/js/dataTables.bootstrap5.min.js') }}"></script>
     <script src="{{ asset('dist/assets/static/js/initTheme.js') }}"></script>
@@ -227,18 +231,18 @@
                         <li class="sidebar-title">Pengaturan</li>
                         <li class="sidebar-item  ">
                             <a href="{{ route('roles') }}" class='sidebar-link'>
-                                <i class="bi bi-hexagon-fill"></i>
+                                <i class="bi bi-person-badge-fill "></i>
                                 <span>Roles</span>
                             </a>
                         </li>
                         <li class="sidebar-item  ">
                             <a href="{{ route('aksesRole') }}" class='sidebar-link'>
-                                <i class="bi bi-person-badge-fill"></i>
-                                <span>Hak Akses Role</span>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Pengguna & Hak Akses Role</span>
                             </a>
                         </li>
                         <li class="sidebar-item  ">
-                            <a href="https://github.com/zuramai/mazer/blob/main/CONTRIBUTING.md" class='sidebar-link'>
+                            <a href="{{ route('produk') }}" class='sidebar-link'>
                                 <i class="bi bi-hexagon-fill"></i>
                                 <span>Prodak</span>
                             </a>
