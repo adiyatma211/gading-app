@@ -13,6 +13,7 @@
         type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" crossorigin href="{{ asset('dist/assets/compiled/css/app.css') }}">
+    <link rel="stylesheet" crossorigin href="{{ asset('dist/assets/compiled/css/darkmode-transaksi.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('dist/assets/compiled/css/app-dark.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('dist/assets/compiled/css/iconly.css') }}">
     <link rel="stylesheet"
@@ -21,7 +22,24 @@
     <link rel="stylesheet" crossorigin href="{{ asset('dist//assets/compiled/css/table-datatable-jquery.css') }}">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
+
+    {{-- <style>
+        .fontawesome-icons {
+            text-align: center;
+        }
+
+        article dl {
+            background-color: rgba(0, 0, 0, .02);
+            padding: 20px;
+        }
+
+        .fontawesome-icons .the-icon {
+            font-size: 24px;
+            line-height: 1.2;
+        }
+    </style> --}}
 </head>
+
 
 <body>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -88,8 +106,8 @@
                         <li class="sidebar-title">Transaksi & Penjualan</li>
 
                         <li class="sidebar-item ">
-                            <a href="table.html" class='sidebar-link'>
-                                <i class="bi bi-grid-1x2-fill"></i>
+                            <a href="{{ route('transaksi') }}" class='sidebar-link'>
+                                <i class="fa-solid fa-money-bill"></i>
                                 <span>Input Transaksi</span>
                             </a>
 
@@ -99,21 +117,13 @@
                         <li class="sidebar-item  has-sub">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-                                <span>Datatables</span>
+                                <span>History Penjualan</span>
                             </a>
 
                             <ul class="submenu ">
-
                                 <li class="submenu-item  ">
-                                    <a href="table-datatable.html" class="submenu-link">Datatable</a>
-
+                                    <a href="{{ route('transaki.tabel') }}" class="submenu-link">Tabel Penjualan</a>
                                 </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="table-datatable-jquery.html" class="submenu-link">Datatable (jQuery)</a>
-
-                                </li>
-
                             </ul>
 
 
@@ -280,6 +290,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://kit.fontawesome.com/75d047f41a.js" crossorigin="anonymous"></script>
     <script src="{{ asset('dist/assets/static/js/pages/datatables.js') }}"></script>
     <script src="{{ asset('dist/assets/extensions/simple-datatables/umd/simple-datatables.js') }}"></script>
     <script src="{{ asset('dist/assets/static/js/components/dark.js') }}"></script>

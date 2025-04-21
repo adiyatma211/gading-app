@@ -91,6 +91,8 @@ class ProdukController extends Controller
             'bahan.*.harga_per_meter' => 'required|numeric',
         ]);
 
+        dd($request);
+
         $produk = Produk::findOrFail($id);
         $produk->update(['nama_produk' => $request->input('nama_produk')]);
 
@@ -122,6 +124,20 @@ class ProdukController extends Controller
             'message' => 'Produk berhasil diperbarui',
             'data' => $produk->load('bahan')
         ]);
+    }
+    public function updateBahan(Request $request, $id)
+    {
+
+        try {
+            $bahan = ProdukBahan::findOrFail($id);
+            $bahan->nama_bahan = $request->nama_bahan;
+            $bahan->harga_per_meter = $request->harga_per_meter;
+            $bahan->save();
+
+            return response()->json(['status' => true, 'message' => 'Bahan berhasil diperbarui']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => 'Gagal memperbarui bahan']);
+        }
     }
 
 

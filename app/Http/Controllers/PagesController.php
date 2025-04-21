@@ -32,5 +32,14 @@ class PagesController extends Controller
         return view('Pengaturan.RoleAkses.v_aksesrole', compact('gerUser','getRoles'));
     }
 
+    public function transaksi()
+    {
+        return view('Transaksi.v_transaksi');
+    }
+    public function transaksiTaabel()
+    {
+        return view('Transaksi.v_tabelTransaksi');
+    }
+
 
 }

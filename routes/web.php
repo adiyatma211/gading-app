@@ -12,6 +12,8 @@ Route::get('/', function () {
     return view('auth.login');
 });
 Route::get('/dashboard',[PagesController::class,'dash'])->name('dash');
+Route::get('/transaksi',[PagesController::class,'transaksi'])->name('transaksi');
+Route::get('/transaksiTaabel',[PagesController::class,'transaksiTaabel'])->name('transaki.tabel');
 Route::get('/aksesRole',[PagesController::class,'aksesRole'])->name('aksesRole');
 
 
@@ -23,6 +25,7 @@ Route::post('/produk/store', [ProdukController::class, 'store'])->name('produk.s
 Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
 Route::post('/produk/{id}/update', [ProdukController::class, 'update'])->name('produk.update');
 Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
+Route::post('/bahan/{bahanId}/update', [ProdukController::class, 'updateBahan']);
 Route::delete('/bahan/{id}', [ProdukController::class, 'hapusBahan']);
 
 
