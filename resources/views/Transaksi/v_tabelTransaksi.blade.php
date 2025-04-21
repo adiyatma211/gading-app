@@ -89,9 +89,16 @@
                                 <input type="text" class="form-control" id="diambil_oleh" name="diambil_oleh"
                                     placeholder="Nama orang yang mengambil">
                             </div>
+
                             <div class="mb-3">
                                 <label for="bukti_pengambilan" class="form-label">Bukti Pengambilan</label>
-                                <input type="file" class="form-control" id="bukti_pengambilan" name="bukti_pengambilan">
+                                <input type="file" class="form-control" id="bukti_pengambilan" name="bukti_pengambilan"
+                                    accept="image/*">
+                                <!-- Elemen untuk menampilkan pratinjau gambar -->
+                                <div id="preview-container" style="margin-top: 10px; display: none;">
+                                    <img id="image-preview" src="#" alt="Preview"
+                                        style="max-width: 100%; max-height: 200px; border: 1px solid #ccc; padding: 5px;">
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-end">
@@ -148,6 +155,35 @@
                 $('#updateStatusModal').modal('hide'); // Tutup modal
                 $('#formUpdateStatus')[0].reset(); // Reset form
                 $('#form-diambil').fadeOut(200); // Sembunyikan form tambahan
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const buktiPengambilanInput = document.getElementById('bukti_pengambilan');
+            const previewContainer = document.getElementById('preview-container');
+            const imagePreview = document.getElementById('image-preview');
+
+            // Tangani event saat file dipilih
+            buktiPengambilanInput.addEventListener('change', function(event) {
+                const file = event.target.files[0]; // Ambil file yang dipilih
+
+                if (file) {
+                    // Tampilkan container pratinjau
+                    previewContainer.style.display = 'block';
+
+                    // Baca file menggunakan FileReader
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Set src gambar pratinjau ke hasil pembacaan file
+                        imagePreview.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file); // Baca file sebagai URL data
+                } else {
+                    // Sembunyikan container jika tidak ada file yang dipilih
+                    previewContainer.style.display = 'none';
+                    imagePreview.src = '#';
+                }
             });
         });
     </script>
