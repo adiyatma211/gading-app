@@ -44,6 +44,6 @@ class User extends Authenticatable
     }
     public function role()
     {
-        return $this->belongsTo(Roles::class); // Tidak perlu parameter karena sudah pakai konvensi
+        return $this->belongsTo(Roles::class,'role_id'); // Tidak perlu parameter karena sudah pakai konvensi
     }
 }
