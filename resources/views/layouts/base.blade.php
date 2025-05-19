@@ -54,8 +54,10 @@
                 <div class="sidebar-header position-relative">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="logo">
-                            <a href="/"><img src="{{ asset('assets/logo1.png') }}"style="width: 150px; height: auto; alt="Logo"
-                                    srcset=""></a>
+                            <a href="{{ route('dash') }}">
+                                <img src="{{ asset('assets/logo1.png') }}" alt="Logo"
+                                    style="width: 150px; height: auto;">
+                            </a>
                         </div>
 
                         <div class="sidebar-toggler  x">
@@ -76,137 +78,130 @@
                         </li>
 
                         {{-- Dashboard (hanya SuperAdmin & Owner) --}}
-                                               @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner', 'kasir']))
-                                <li class="sidebar-title">Dashboard</li>
-                                <li class="sidebar-item active">
-                                    <a href="/dashboard" class='sidebar-link'>
-                                        <i class="bi bi-grid-fill"></i>
-                                        <span>Dashboard</span>
-                                    </a>
+                        @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner', 'kasir']))
+                            <li class="sidebar-title">Dashboard</li>
+                            <li class="sidebar-item active">
+                                <a href="/dashboard" class='sidebar-link'>
+                                    <i class="bi bi-grid-fill"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        {{-- Transaksi & Penjualan (semua role bisa lihat) --}}
+                        <li class="sidebar-title">Transaksi & Penjualan</li>
+                        <li class="sidebar-item">
+                            <a href="{{ route('transaksi') }}" class='sidebar-link'>
+                                <i class="fa-solid fa-money-bill"></i>
+                                <span>Input Transaksi</span>
+                            </a>
+                        </li>
+
+                        <li class="sidebar-item has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                                <span>History Penjualan</span>
+                            </a>
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="{{ route('transaki.tabel') }}" class="submenu-link">Tabel
+                                        Penjualan</a>
                                 </li>
-                                @endif
+                            </ul>
+                        </li>
 
-                                {{-- Transaksi & Penjualan (semua role bisa lihat) --}}
-                                <li class="sidebar-title">Transaksi & Penjualan</li>
-                                <li class="sidebar-item">
-                                    <a href="{{ route('transaksi') }}" class='sidebar-link'>
-                                        <i class="fa-solid fa-money-bill"></i>
-                                        <span>Input Transaksi</span>
-                                    </a>
-                                </li>
-
-                                <li class="sidebar-item has-sub">
-                                    <a href="#" class='sidebar-link'>
-                                        <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-                                        <span>History Penjualan</span>
-                                    </a>
-                                    <ul class="submenu">
-                                        <li class="submenu-item">
-                                            <a href="{{ route('transaki.tabel') }}" class="submenu-link">Tabel
-                                                Penjualan</a>
-                                        </li>
-                                    </ul>
-                                </li>
-
-                                {{-- Laporan (hanya SuperAdmin & Owner) --}}
-                                @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
-                                    <li class="sidebar-title">Laporan</li>
-                                    <li class="sidebar-item has-sub">
-                                        <a href="#" class='sidebar-link'>
-                                            <i class="bi bi-journal-check"></i>
-                                            <span>Report</span>
-                                        </a>
-                                        <ul class="submenu">
-                                            <li class="submenu-item">
-                                                <a href="auth-login.html" class="submenu-link">Login</a>
-                                            </li>
-                                            <li class="submenu-item">
-                                                <a href="auth-register.html" class="submenu-link">Register</a>
-                                            </li>
-                                            <li class="submenu-item">
-                                                <a href="auth-forgot-password.html" class="submenu-link">Forgot
-                                                    Password</a>
-                                            </li>
-                                        </ul>
+                        {{-- Laporan (hanya SuperAdmin & Owner) --}}
+                        @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
+                            <li class="sidebar-title">Laporan</li>
+                            <li class="sidebar-item has-sub">
+                                <a href="#" class='sidebar-link'>
+                                    <i class="bi bi-journal-check"></i>
+                                    <span>Report</span>
+                                </a>
+                                <ul class="submenu">
+                                    <li class="submenu-item">
+                                        <a href="{{ route('report') }}" class="submenu-link">Report Gading</a>
                                     </li>
-                                @endif
-
-                                {{-- Pengaturan (hanya SuperAdmin & Owner) --}}
-                                @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
-                                    <li class="sidebar-title">Pengaturan</li>
-                                    <li class="sidebar-item">
-                                        <a href="{{ route('roles') }}" class='sidebar-link'>
-                                            <i class="bi bi-person-badge-fill"></i>
-                                            <span>Roles</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a href="{{ route('aksesRole') }}" class='sidebar-link'>
-                                            <i class="bi bi-people-fill"></i>
-                                            <span>Pengguna & Hak Akses Role</span>
-                                        </a>
-                                    </li>
-                                    <li class="sidebar-item">
-                                        <a href="{{ route('produk') }}" class='sidebar-link'>
-                                            <i class="bi bi-hexagon-fill"></i>
-                                            <span>Produk</span>
-                                        </a>
-                                    </li>
-                                @endif
-
-                                {{-- Logout --}}
-                                <li class="sidebar-item">
-                                    <a href="#" onclick="confirmLogout(event)"
-                                        style="display: block; background-color: #dc3545; color: white; padding: 12px 20px; margin: 20px; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none;">
-                                        <i class="bi bi-box-arrow-right" style="margin-right: 5px;"></i> Logout
-                                    </a>
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                                        style="display: none;">
-                                        @csrf
-                                    </form>
-                                </li>
-
                                 </ul>
-                        </div>
-                    </div>
+                            </li>
+                        @endif
+
+                        {{-- Pengaturan (hanya SuperAdmin & Owner) --}}
+                        @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
+                            <li class="sidebar-title">Pengaturan</li>
+                            <li class="sidebar-item">
+                                <a href="{{ route('roles') }}" class='sidebar-link'>
+                                    <i class="bi bi-person-badge-fill"></i>
+                                    <span>Roles</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-item">
+                                <a href="{{ route('aksesRole') }}" class='sidebar-link'>
+                                    <i class="bi bi-people-fill"></i>
+                                    <span>Pengguna & Hak Akses Role</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-item">
+                                <a href="{{ route('produk') }}" class='sidebar-link'>
+                                    <i class="bi bi-hexagon-fill"></i>
+                                    <span>Produk</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        {{-- Logout --}}
+                        <li class="sidebar-item">
+                            <a href="#" onclick="confirmLogout(event)"
+                                style="display: block; background-color: #dc3545; color: white; padding: 12px 20px; margin: 20px; text-align: center; border-radius: 8px; font-weight: bold; text-decoration: none;">
+                                <i class="bi bi-box-arrow-right" style="margin-right: 5px;"></i> Logout
+                            </a>
+                            <form id="logout-form" action="{{ route('logout') }}" method="POST"
+                                style="display: none;">
+                                @csrf
+                            </form>
+                        </li>
+
+                    </ul>
                 </div>
-                <div id="main">
-                    <header class="mb-3">
-                        <a href="#" class="burger-btn d-block d-xl-none">
-                            <i class="bi bi-justify fs-3"></i>
-                        </a>
-                    </header>
-                    @yield('content')
-                    <footer>
-                        <div class="footer clearfix mb-0 text-muted">
-                            <div class="float-start">
-                                <p>2025 &copy; Gading Printing</p>
-                            </div>
-                            {{-- <div class="float-end">
+            </div>
+        </div>
+        <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block d-xl-none">
+                    <i class="bi bi-justify fs-3"></i>
+                </a>
+            </header>
+            @yield('content')
+            <footer>
+                <div class="footer clearfix mb-0 text-muted">
+                    <div class="float-start">
+                        <p>2025 &copy; Gading Printing</p>
+                    </div>
+                    {{-- <div class="float-end">
                         <p>Crafted with <span class="text-danger"><i class="bi bi-heart-fill icon-mid"></i></span>
                             by <a href="https://saugi.me">Saugi</a></p>
                     </div> --}}
-                        </div>
-                    </footer>
                 </div>
-            </div>
+            </footer>
+        </div>
+    </div>
 
-            <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <script src="https://kit.fontawesome.com/75d047f41a.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://kit.fontawesome.com/75d047f41a.js" crossorigin="anonymous"></script>
 
-            {{-- <script src="{{ asset('dist/assets/extensions/dayjs/dayjs.min.js') }}"></script>
+    {{-- <script src="{{ asset('dist/assets/extensions/dayjs/dayjs.min.js') }}"></script>
             <script src="{{ asset('dist/assets/extensions/apexcharts/apexcharts.min.js') }}"></script>
             <script src="{{ asset('dist/assets/static/js/pages/ui-apexchart.js') }}"></script> --}}
 
-            <script src="{{ asset('dist/assets/static/js/pages/datatables.js') }}"></script>
-            <script src="{{ asset('dist/assets/extensions/simple-datatables/umd/simple-datatables.js') }}"></script>
-            <script src="{{ asset('dist/assets/static/js/components/dark.js') }}"></script>
-            <script src="{{ asset('dist/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
-            <script src="{{ asset('dist/assets/compiled/js/app.js') }}"></script>
-            <script src="{{ asset('dist/assets/extensions/apexcharts/apexcharts.min.js') }}"></script>
-            <script src="{{ asset('dist/assets/static/js/pages/dashboard.js') }}"></script>
+    <script src="{{ asset('dist/assets/static/js/pages/datatables.js') }}"></script>
+    <script src="{{ asset('dist/assets/extensions/simple-datatables/umd/simple-datatables.js') }}"></script>
+    <script src="{{ asset('dist/assets/static/js/components/dark.js') }}"></script>
+    <script src="{{ asset('dist/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
+    <script src="{{ asset('dist/assets/compiled/js/app.js') }}"></script>
+    <script src="{{ asset('dist/assets/extensions/apexcharts/apexcharts.min.js') }}"></script>
+    <script src="{{ asset('dist/assets/static/js/pages/dashboard.js') }}"></script>
 </body>
 
 <script>

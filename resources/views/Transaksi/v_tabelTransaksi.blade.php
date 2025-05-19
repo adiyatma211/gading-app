@@ -143,7 +143,7 @@
                                 <input type="text" class="form-control" id="kekurangan" name="kekurangan" readonly>
                             </div>
 
-                            <div class="mb-3">
+                            {{-- <div class="mb-3">
                                 <label for="bukti_pengambilan" class="form-label">Bukti Pengambilan</label>
                                 <input type="file" class="form-control" id="bukti_pengambilan"
                                     name="bukti_pengambilan" accept="image/*">
@@ -152,7 +152,7 @@
                                     <img id="image-preview" src="#" alt="Preview"
                                         style="max-width: 100%; max-height: 200px; border: 1px solid #ccc; padding: 5px;">
                                 </div>
-                            </div>
+                            </div> --}}
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Batal</button>
@@ -216,13 +216,13 @@
                             <td>:</td>
                             <td id="detail_diambil_oleh">-</td>
                         </tr>
-                        <tr>
+                        {{-- <tr>
                             <th>Bukti Pengambilan</th>
                             <td>:</td>
                             <td id="detail_bukti_pengambilan">
                                 <span class="text-muted">Tidak ada bukti</span>
                             </td>
-                        </tr>
+                        </tr> --}}
                     </table>
                 </div>
                 <div class="modal-footer">
@@ -288,18 +288,18 @@
                         $('#detail_tanggal_diambil').text(t.tanggal_ambil || '-');
                         $('#detail_diambil_oleh').text(t.diambil_oleh || '-');
 
-                        // Tampilkan Bukti Pengambilan
-                        const previewContainer = $('#detail_bukti_pengambilan');
-                        if (t.bukti_pengambilan) {
-                            const imagePath = '{{ asset('bukti_pengambilan') }}/' + t
-                                .bukti_pengambilan;
-                            previewContainer.html('<img src="' + imagePath +
-                                '" alt="Bukti Pengambilan" style="max-width: 100%; border: 1px solid #ccc;">'
-                            );
-                        } else {
-                            previewContainer.html(
-                                '<span class="text-muted">Tidak ada bukti pengambilan.</span>');
-                        }
+                        // // Tampilkan Bukti Pengambilan
+                        // const previewContainer = $('#detail_bukti_pengambilan');
+                        // if (t.bukti_pengambilan) {
+                        //     const imagePath = '{{ asset('bukti_pengambilan') }}/' + t
+                        //         .bukti_pengambilan;
+                        //     previewContainer.html('<img src="' + imagePath +
+                        //         '" alt="Bukti Pengambilan" style="max-width: 100%; border: 1px solid #ccc;">'
+                        //     );
+                        // } else {
+                        //     previewContainer.html(
+                        //         '<span class="text-muted">Tidak ada bukti pengambilan.</span>');
+                        // }
 
                         $('#detail-transaksi-body #loading').hide();
                         $('#detail-transaksi-body #detail-table').show();

@@ -64,16 +64,25 @@ Route::middleware(['auth', 'check.role:SuperAdmin,Owner,Super Admin'])->group(fu
     Route::post('/aksesRole/store', [HakAksesRoleController::class, 'updateUserRole'])->name('user.update');
     Route::post('/aksesRole/update-role/{id}', [HakAksesRoleController::class, 'updateUserRole'])->name('user.update-role');
     Route::delete('/aksesRole/delete-user/{id}', [HakAksesRoleController::class, 'deleteUser'])->name('user.delete');
+
+
+    // Report
+
+    Route::get('/report', [PagesController::class, 'transaksiReport'])->name('report');
+    Route::post('/laporan/transaksi/data', [PagesController::class, 'getDataTransaksi'])->name('laporan.transaksi.data');
+    Route::get('/export-transaksi', [PagesController::class, 'exportExcel'])->name('export.transaksi');
 });
 
 // Route khusus untuk Kasir
-Route::middleware(['auth', 'check.role:kasir'])->group(function () {
+Route::middleware(['auth', 'check.role:kasir,Owner,superadmin,SuperAdmin,Super Admin'])->group(function () {
     Route::get('/transaksi', [PagesController::class, 'transaksi'])->name('transaksi');
     Route::get('/transaksi/cetak/{id}', [PagesController::class, 'cetakNota'])->name('transaksi.cetak');
     Route::get('/transaksi/detail/{id}', [TransactionsController::class, 'detailTransaksi'])->name('transaksi.detail');
     Route::post('/transaksi/store', [TransactionsController::class, 'store'])->name('transaksi.store');
     Route::post('/transaksi/updateTransaksi', [TransactionsController::class, 'updateTransaksi'])->name('transaksi.updateTransaksi');
 });
+
+
 // Route::get('/dashboard',[PagesController::class,'dash'])->name('dash');
 // Route::get('/transaksiTaabel',[PagesController::class,'transaksiTaabel'])->name('transaki.tabel');
 // Route::get('/aksesRole',[PagesController::class,'aksesRole'])->name('aksesRole');

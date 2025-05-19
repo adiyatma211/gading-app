@@ -182,12 +182,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Pemesanan Baru</h4>
-                    </div>
-                    <div class="card-content pb-4">
-                        @foreach ($pesanbaru as $a)
+                @foreach ($pesanbaru as $a)
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Pemesanan Baru</h4>
+                        </div>
+                        <div class="card-content pb-4">
                             <div class="recent-message d-flex px-4 py-3">
                                 <div class="avatar avatar-lg">
                                     <img src="{{ asset('dist/assets/compiled/jpg/4.jpg') }}">
@@ -196,16 +196,32 @@
                                     <h5 class="mb-1">PIC KASIR: {{ $a->createdBy }}</h5>
                                     <h5 class="mb-1">Nama Customer: {{ $a->customer->nama }}</h5>
                                     <h6 class="mb-1">Total Pemesanan: Rp {{ number_format($a->total, 0, ',', '.') }}</h6>
-                                    <h6 class="mb-1">Status Pembayaran: {{ $a->status_pembayaran }}</h6>
+                                    <h6 class="mb-1">
+                                        Status Pemesanan:
+                                        @if (empty($a->diambil_oleh))
+                                            <span class="badge bg-warning text-uppercase">Belum Diambil</span>
+                                        @else
+                                            <span class="badge bg-success text-uppercase"> Selesai
+                                        @endif
+                                    </h6>
+                                    <h6 class="mb-1">
+                                        Status Pembayaran:
+                                        <span
+                                            class="badge
+                                            @if ($a->status_pembayaran == 'lunas') bg-success
+                                            @else bg-danger @endif">
+                                            {{ strtoupper($a->status_pembayaran) }}
+                                        </span>
+                                    </h6>
                                 </div>
                             </div>
                             <div class="px-4">
                                 <button class='btn btn-block btn-xl btn-outline-primary font-bold mt-3'> Lihat
                                     Detail</button>
                             </div>
-                        @endforeach
+                        </div>
                     </div>
-                </div>
+                @endforeach
                 {{-- <div class="card">
                     <div class="card-header">
                         <h4>Visitors Profile</h4>

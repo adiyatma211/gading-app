@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\ProdukBahan;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class transactionitems extends Model
 {
@@ -15,7 +16,7 @@ class transactionitems extends Model
 
     public function produkBahan()
     {
-        return $this->belongsTo(produkBahan::class, 'tipe_produk_id', 'id');
+        return $this->belongsTo(ProdukBahan::class, 'tipe_produk_id', 'id');
     }
 
 }

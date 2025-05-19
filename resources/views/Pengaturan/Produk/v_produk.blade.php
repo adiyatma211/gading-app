@@ -30,6 +30,8 @@
                                     <th>Nama Produk</th>
                                     <th>Bahan</th>
                                     <th>Harga per Meter</th>
+                                    <th>Diskon</th>
+                                    <th>Total Harga</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -41,6 +43,8 @@
                                             <td>{{ $item->nama_produk }}</td>
                                             <td>{{ $bahan->nama_bahan }}</td>
                                             <td>Rp{{ number_format($bahan->harga_per_meter) }}</td>
+                                            <td>Rp{{ number_format($bahan->diskon) }}</td>
+                                            <td>Rp{{ number_format($bahan->total_harga) }}</td>
                                             <td>
                                                 <button class="btn btn-sm btn-danger btn-delete-bahan"
                                                     data-id="{{ $bahan->id }}" data-nama="{{ $bahan->nama_bahan }}">
@@ -110,10 +114,15 @@
                         <label for="editNamaBahan" class="form-label">Nama Bahan</label>
                         <input type="text" class="form-control" id="editNamaBahan">
                     </div>
+
                     <div class="mb-3">
                         <label for="editHargaBahan" class="form-label">Harga per Meter</label>
                         <input type="text" class="form-control harga-input" id="editHargaBahan" placeholder="Rp 0" />
                         <input type="hidden" id="editHargaBahanRaw">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="diskon_bahan" class="form-label">Diskon</label>
+                        <input type="number" class="form-control" name="diskon_bahan[]" value="0" required>
                     </div>
 
                 </div>
@@ -135,135 +144,114 @@
         let bahanIndex = 0;
         let editTargetIndex = null;
 
+        // Format Rupiah
         function formatRupiah(angka, prefix = 'Rp ') {
-            // If the input is not a string, convert it to string
             if (typeof angka !== 'string') {
                 angka = angka.toString();
             }
-
-            // Remove all non-numeric characters except comma (,)
-            let number_string = angka.replace(/[^,\d]/g, '').toString();
-
-            // If empty, return prefix + 0
+            let number_string = angka.replace(/[^,\d]/g, '');
             if (number_string === '' || number_string === '0') {
                 return prefix + '0';
             }
-
-            // Remove leading zeros while maintaining at least one digit
-            number_string = number_string.replace(/^0+(?=\d)/, '');
-
-            // Format with thousand separator
+            number_string = number_string.replace(/^0+(?!$)/, ''); // Hilangkan leading zero
             const split = number_string.split(',');
-            const sisa = split[0].length % 3;
-            let rupiah = split[0].substr(0, sisa);
-            const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-
-            // Add thousands separators
-            if (ribuan) {
-                const separator = sisa ? '.' : '';
-                rupiah += separator + ribuan.join('.');
-            }
-
-            // Add comma for decimal part if exists
-            rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-            return prefix + rupiah;
+            let rupiah = split[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return prefix + rupiah + (split[1] ? ',' + split[1].substr(0, 2) : '');
         }
 
-        // Function to extract numeric value from formatted Rupiah string
+        // Extract Numeric Value
         function extractNumericValue(rupiahString) {
-            if (!rupiahString) return 0;
-
-            // Jika bukan string, ubah dulu ke string
-            if (typeof rupiahString !== 'string') {
-                rupiahString = rupiahString.toString();
-            }
-
-            return rupiahString.replace(/[^\d]/g, '');
+            return rupiahString ? parseInt(rupiahString.replace(/[^\d]/g, '')) : 0;
         }
 
 
-        // Function to add a new material row
-        function tambahBarisBahan(id = '', nama = '', harga = '') {
-            // Ensure harga is a string for proper handling
-            harga = harga.toString();
-
+        // Tambah Baris Bahan
+        function tambahBarisBahan(id = '', nama = '', harga = '', diskon = '') {
             const row = `
-                <div class="row mb-2" data-index="${bahanIndex}">
-                    <input type="hidden" name="bahan[${bahanIndex}][id]" value="${id}">
-                    <div class="col-5">
-                        <input type="text" class="form-control" name="bahan[${bahanIndex}][nama_bahan]" value="${nama}" placeholder="Nama Bahan" required>
-                    </div>
-                    <div class="col-3">
-                        <input type="text" class="form-control harga-input" name="bahan[${bahanIndex}][harga_per_meter]" value="${formatRupiah(harga)}" placeholder="Rp 0" required>
-                        <input type="hidden" name="bahan[${bahanIndex}][harga_raw]" value="${extractNumericValue(harga)}">
-                    </div>
-                    <div class="col-2">
-                        <button type="button" class="btn btn-danger btn-remove-bahan">-</button>
-                    </div>
-                    <div class="col-2">
-                        <button type="button" class="btn btn-primary btn-edit-row-bahan" data-index="${bahanIndex}" data-nama="${nama}" data-harga="${harga}" data-id="${id}">
-                            Edit
-                        </button>
-                    </div>
-                </div>`;
+        <div class="row mb-2 bahan-row" data-index="${bahanIndex}">
+            <input type="hidden" name="bahan[${bahanIndex}][id]" value="${id}">
+            <div class="col-3">
+                <input type="text" class="form-control" name="bahan[${bahanIndex}][nama_bahan]" value="${nama}" placeholder="Nama Bahan" required>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control harga-input" name="bahan[${bahanIndex}][harga_per_meter]" value="${formatRupiah(harga)}" placeholder="Rp 0" required>
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control diskon-input" name="bahan[${bahanIndex}][diskon]" value="${formatRupiah(diskon)}" placeholder="Rp 0">
+            </div>
+            <div class="col-2">
+                <input type="text" class="form-control total-harga-input" name="bahan[${bahanIndex}][total_harga]" value="Rp 0" readonly>
+            </div>
+            <div class="col-2 d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-primary btn-edit-row-bahan" data-index="${bahanIndex}" data-id="${id}">Edit</button>
+                <button type="button" class="btn btn-danger btn-remove-bahan">Hapus</button>
+            </div>
+        </div>`;
             $('#bahanContainer').append(row);
             bahanIndex++;
-
-            // Setup event handlers for the newly added row
             setupRupiahInputHandlers();
+            hitungTotalSemua();
         }
 
-        // Setup input handlers for Rupiah formatting
+        // Setup Rupiah Input
         function setupRupiahInputHandlers() {
-            // Remove any existing handlers first to prevent duplication
-            $('.harga-input').off('keyup change');
+            $('.harga-input, .diskon-input').off('input').on('input', function() {
+                const row = $(this).closest('.bahan-row');
+                let value = $(this).val().replace(/[^0-9]/g, ''); // Hanya angka
 
-            // Add new handlers
-            $('.harga-input').on('keyup change', function() {
-                // Get the input value
-                let value = $(this).val();
+                // Hindari leading zero (0) saat mengetik
+                if (value.startsWith('0') && value.length > 1) {
+                    value = value.replace(/^0+/, '');
+                }
 
-                // Extract raw numeric value
-                const numericValue = extractNumericValue(value);
-
-                // Format as Rupiah and update input value
-                $(this).val(formatRupiah(numericValue));
-
-                // Update the hidden field with raw value
-                $(this).closest('.row').find('input[name$="[harga_raw]"]').val(numericValue);
+                $(this).val(formatRupiah(value));
+                hitungTotalSemua();
             });
         }
 
-        // Handle form submission - prepare data before submit
+        // Hitung Total Semua Bahan
+        function hitungTotalSemua() {
+            $('.bahan-row').each(function() {
+                const row = $(this);
+                const harga = extractNumericValue(row.find('.harga-input').val());
+                const diskon = extractNumericValue(row.find('.diskon-input').val());
+                const total = Math.max(harga - diskon, 0);
+                row.find('.total-harga-input').val(formatRupiah(total));
+            });
+
+            let totalSemua = 0;
+            $('.bahan-row').each(function() {
+                const total = extractNumericValue($(this).find('.total-harga-input').val());
+                totalSemua += total;
+            });
+
+            $('#totalSemua').text(formatRupiah(totalSemua));
+        }
+
+
+        // Prepare Form Data
         function prepareFormData() {
-            $('.harga-input').each(function() {
-                // Get the numeric value from the hidden field
-                const rawValue = $(this).closest('.row').find('input[name$="[harga_raw]"]').val();
-
-                // Set the raw value to the actual input field for submission
-                const inputName = $(this).attr('name');
-                $(`input[name="${inputName}"]`).val(rawValue);
+            $('.harga-input, .diskon-input, .total-harga-input').each(function() {
+                const rawValue = extractNumericValue($(this).val());
+                $(this).val(rawValue);
             });
         }
 
+        // Tambah Bahan Baru
         $(document).on('click', '.btn-add-bahan', function() {
             tambahBarisBahan();
         });
 
+        // Hapus Bahan
         $(document).on('click', '.btn-remove-bahan', function() {
-            $(this).closest('.row').remove();
+            $(this).closest('.bahan-row').remove();
+            hitungTotalSemua();
         });
 
+        // Show Produk Modal (Tambah/Edit)
         $(document).on('click', '.btn-show-produk-modal', function() {
             const id = $(this).data('id');
             const nama = $(this).data('nama');
-
-            let bahanData;
-            try {
-                bahanData = JSON.parse($(this).attr('data-bahan'));
-            } catch (e) {
-                bahanData = [];
-            }
 
             $('#formProduk')[0].reset();
             $('#produkId').val(id ?? '');
@@ -273,120 +261,25 @@
             $('#bahanContainer').html('');
             bahanIndex = 0;
 
+            const bahanData = JSON.parse($(this).attr('data-bahan') || '[]');
             if (bahanData.length) {
-                bahanData.forEach((item) => {
-                    tambahBarisBahan(item.id ?? '', item.nama_bahan, item.harga_per_meter);
+                bahanData.forEach(item => {
+                    tambahBarisBahan(item.id ?? '', item.nama_bahan, item.harga_per_meter, item.diskon ??
+                        0);
                 });
             } else {
                 tambahBarisBahan();
             }
+            hitungTotalSemua();
         });
 
-        // Event listener for editing a material row
-        $(document).on('click', '.btn-edit-row-bahan', function() {
-            const index = $(this).data('index');
-            const id = $(this).data('id');
-            const nama = $(this).data('nama');
-            const harga = $(this).data('harga');
-
-            if (typeof index !== 'undefined') {
-                const row = $(`[data-index='${index}']`);
-                const namaFromInput = row.find('input[name$="[nama_bahan]"]').val();
-                const hargaFromInput = row.find('input[name$="[harga_raw]"]').val();
-
-                $('#editNamaBahan').val(namaFromInput);
-                $('#editHargaBahan').val(formatRupiah(hargaFromInput));
-                $('#editHargaBahanRaw').val(hargaFromInput);
-                $('#editBahanId').val(id);
-                editTargetIndex = index;
-            } else {
-                $('#editNamaBahan').val(nama);
-                $('#editHargaBahan').val(formatRupiah(harga));
-                $('#editHargaBahanRaw').val(extractNumericValue(harga));
-                $('#editBahanId').val(id);
-                editTargetIndex = null;
-            }
-
-            $('#modalEditBahan').modal('show');
-        });
-
-        // Event listener for the existing edit buttons in the table
-        $(document).on('click', '.btn-edit-bahan', function() {
-            const id = $(this).data('id');
-            const nama = $(this).data('nama');
-            const harga = $(this).data('harga');
-
-            $('#editNamaBahan').val(nama);
-            $('#editHargaBahan').val(formatRupiah(harga));
-            $('#editHargaBahanRaw').val(extractNumericValue(harga));
-            $('#editBahanId').val(id);
-            editTargetIndex = null;
-
-            $('#modalEditBahan').modal('show');
-        });
-
-        // Add event handlers for formatting the edit modal's price input
-        $('#editHargaBahan').on('keyup change', function() {
-            const value = $(this).val();
-            const numericValue = extractNumericValue(value);
-
-            $(this).val(formatRupiah(numericValue));
-            $('#editHargaBahanRaw').val(numericValue);
-        });
-
-        // Event listener for updating the material
-        $(document).on('click', '#btnUpdateBahan', function() {
-            const namaBaru = $('#editNamaBahan').val();
-            const hargaFormatted = $('#editHargaBahan').val(); // ambil string 'Rp 12.000'
-            const hargaRaw = extractNumericValue(hargaFormatted); // hasil: 12000
-            const bahanId = $('#editBahanId').val();
-
-            console.log('DEBUG | hargaRaw:', hargaRaw, 'namaBaru:', namaBaru); // optional debug
-
-            if (bahanId) {
-                $.ajax({
-                    url: `/bahan/${bahanId}/update`,
-                    method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        nama_bahan: namaBaru,
-                        harga_per_meter: hargaRaw // Kirim angka murni
-                    },
-                    success: function(res) {
-                        if (res.status) {
-                            Swal.fire({
-                                title: 'Berhasil',
-                                text: res.message,
-                                icon: 'success',
-                                confirmButtonText: 'OK'
-                            }).then(() => {
-                                $('#modalEditBahan').modal('hide');
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire('Gagal', res.message, 'warning');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        Swal.fire('Error', 'Terjadi kesalahan saat menyimpan bahan.', 'error');
-                    }
-                });
-            } else {
-                Swal.fire('Error', 'Bahan tidak valid untuk diedit.', 'error');
-            }
-        });
-
-
-        // Form submission for product
+        // Form Submission Produk
         $('#formProduk').submit(function(e) {
             e.preventDefault();
-
-            // Prepare the form data before submission
             prepareFormData();
 
-            const form = $(this);
-            const url = form.attr('action');
-            const formData = form.serialize();
+            const url = $(this).attr('action');
+            const formData = $(this).serialize();
 
             if ($('[name^="bahan"]').length === 0) {
                 Swal.fire('Gagal', 'Setidaknya satu bahan harus ditambahkan.', 'warning');
@@ -396,12 +289,7 @@
             $.post(url, formData)
                 .done(function(res) {
                     if (res.status) {
-                        Swal.fire({
-                            title: 'Berhasil',
-                            text: res.message,
-                            icon: 'success',
-                            confirmButtonText: 'OK'
-                        }).then(() => {
+                        Swal.fire('Berhasil', res.message, 'success').then(() => {
                             $('#modalProduk').modal('hide');
                             setTimeout(() => location.reload(), 1000);
                         });
@@ -414,61 +302,28 @@
                 });
         });
 
-        // Event listener for deleting product
-        $(document).on('click', '.btn-delete-produk', function() {
-            const id = $(this).data('id');
-
-            Swal.fire({
-                title: 'Yakin ingin menghapus?',
-                text: 'Produk akan dihapus secara permanen.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/produk/${id}`,
-                        type: 'DELETE',
-                        success: function(res) {
-                            if (res.status) {
-                                Swal.fire({
-                                    title: 'Berhasil',
-                                    text: res.message,
-                                    icon: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    setTimeout(() => location.reload(), 1000);
-                                });
-                            } else {
-                                Swal.fire('Gagal', res.message, 'warning');
-                            }
-                        },
-                        error: function() {
-                            Swal.fire('Error', 'Terjadi kesalahan saat menghapus produk.',
-                                'error');
-                        }
-                    });
-                }
-            });
-        });
-
+        // Delete Bahan
         $(document).on('click', '.btn-delete-bahan', function() {
             const id = $(this).data('id');
             const nama = $(this).data('nama');
+            const row = $(this).closest('.bahan-row');
 
             Swal.fire({
                 title: 'Yakin ingin menghapus?',
-                text: `Bahan "${nama}" akan dihapus.`,
+                text: `Bahan "${nama}" akan dihapus dari database.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Ya, Hapus!',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Kirim permintaan DELETE ke server
                     $.ajax({
                         url: `/bahan/${id}`,
                         type: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}' // Tambahkan CSRF Token
+                        },
                         success: function(res) {
                             if (res.status) {
                                 Swal.fire({
@@ -477,24 +332,29 @@
                                     icon: 'success',
                                     confirmButtonText: 'OK'
                                 }).then(() => {
-                                    setTimeout(() => location.reload(), 1000);
+                                    // Reload setelah klik OK
+                                    location.reload();
                                 });
                             } else {
                                 Swal.fire('Gagal', res.message, 'warning');
                             }
                         },
-                        error: function() {
+                        error: function(xhr) {
                             Swal.fire('Error', 'Terjadi kesalahan saat menghapus bahan.',
                                 'error');
+                            console.error(xhr.responseText);
                         }
                     });
                 }
             });
         });
 
-        // Initialize the Rupiah input handlers when the document is ready
+
+
+        // Initialize
         $(document).ready(function() {
             setupRupiahInputHandlers();
+            hitungTotalSemua();
         });
     </script>
 @endsection

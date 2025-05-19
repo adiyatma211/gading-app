@@ -262,7 +262,8 @@
                                 <select class="form-select" name="items[0][tipe]">
                                     <option value="">-- Pilih Produk --</option>
                                     @foreach ($showProdak as $produk)
-                                        <option value="{{ $produk->id }}" data-harga="{{ $produk->harga_per_meter }}">
+                                        <option value="{{ $produk->id }}" data-harga="{{ $produk->total_harga }}"
+                                            data-diskon="{{ $produk->diskon }}">
                                             {{ $produk->nama_bahan }}</option>
                                     @endforeach
                                 </select>
@@ -280,6 +281,11 @@
                             <div class="col-md-2">
                                 <label class="form-label">Harga/m</label>
                                 <input type="text" class="form-control rupiah-input" name="items[0][harga]" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Diskon Barang/m</label>
+                                <input type="text" class="form-control rupiah-input" name="items[0][diskonbarang]"
+                                    disabled>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Keterangan (Opsional)</label>
@@ -499,17 +505,22 @@
                 return prefix + rupiah;
             }
 
-            // Event saat dropdown berubah
             document.querySelectorAll('select[name^="items["]').forEach(select => {
                 select.addEventListener('change', function() {
                     const selectedOption = this.options[this.selectedIndex];
                     const harga = selectedOption.getAttribute('data-harga') || '0';
+                    const diskon = selectedOption.getAttribute('data-diskon') || '0';
 
-                    // Ambil input harga di baris yang sama
-                    const hargaInput = this.closest('.mmt-item').querySelector(
-                        'input[name$="[harga]"]');
+                    // Ambil input harga dan diskon di baris yang sama
+                    const row = this.closest('.mmt-item');
+                    const hargaInput = row.querySelector('input[name$="[harga]"]');
+                    const diskonInput = row.querySelector('input[name$="[diskonbarang]"]');
                     if (hargaInput) {
                         hargaInput.value = formatRupiah(harga);
+                    }
+                    // Tampilkan Diskon ke Field Diskon Barang/m (di dalam baris yang sama)
+                    if (diskonInput) {
+                        diskonInput.value = formatRupiah(diskon);
                     }
                 });
             });
@@ -591,7 +602,7 @@
             <select class="form-select tipe-produk" name="items[${index}][tipe]" required>
                 <option value="">-- Pilih Produk --</option>
                 @foreach ($showProdak as $produk)
-                    <option value="{{ $produk->id }}" data-harga="{{ $produk->harga_per_meter }}">
+                    <option value="{{ $produk->id }}" data-harga="{{ $produk->total_harga }}"   data-diskon="{{ $produk->diskon }}" >
                         {{ $produk->nama_bahan }}
                     </option>
                 @endforeach
@@ -609,6 +620,12 @@
             <label class="form-label">Harga/m</label>
             <input type="text" class="form-control rupiah-input harga-input" name="items[${index}][harga]" required>
         </div>
+        <div class="col-md-2">
+            <label class="form-label">Diskon Barang/m</label>
+            <input type="text" class="form-control rupiah-input diskon-input" name="items[${index}][diskonbarang]"
+                disabled>
+        </div>
+
         <div class="col-md-3">
             <label class="form-label">Keterangan (Opsional)</label>
             <textarea class="form-control" name="items[${index}][keterangan]" rows="2" placeholder="Tambahkan catatan untuk produk ini..."></textarea>
@@ -629,10 +646,29 @@
         });
 
         function attachDropdownChangeHandler() {
-            $('.tipe-produk').off('change').on('change', function() {
+            $('.form-select[name^="items["]').off('change').on('change', function() {
                 const harga = $(this).find(':selected').data('harga') || 0;
-                const hargaInput = $(this).closest('.mmt-item').find('.harga-input');
-                hargaInput.val(formatRupiah(harga.toString())); // Pakai fungsi formatRupiah kamu
+                const diskonharga = $(this).find(':selected').data('diskon') || 0;
+
+                const row = $(this).closest('.mmt-item');
+                const hargaInput = row.find('input[name$="[harga]"]');
+                const diskonInput = row.find('input[name$="[diskonbarang]"]');
+
+                // Debugging: Cek Nilai
+                console.log("Harga:", harga);
+                console.log("Diskon:", diskonharga);
+                console.log("Harga Input:", hargaInput.length ? "Ditemukan" : "Tidak Ditemukan");
+                console.log("Diskon Input:", diskonInput.length ? "Ditemukan" : "Tidak Ditemukan");
+
+                // Set nilai harga dan diskon
+                if (hargaInput.length) {
+                    hargaInput.val(formatRupiah(harga.toString()));
+                }
+
+                if (diskonInput.length) {
+                    diskonInput.prop('disabled', false); // Aktifkan jika disabled
+                    diskonInput.val(formatRupiah(diskonharga.toString()));
+                }
             });
         }
         // Menghapus item MMT
@@ -1047,6 +1083,23 @@
             if ($('#formTransaksi').is('form')) $('#formTransaksi')[0].reset();
             if ($('#pembayaranForm').is('form')) $('#pembayaranForm')[0].reset();
 
+            // Reset input file
+            $('#bukti_pembayaran').val('');
+            $('.preview-image').attr('src', '').hide(); // Hapus preview gambar jika ada
+
+            // Reset field DP
+            $('#dp').val('');
+
+            // Reset dropdown ke nilai default
+            $('#metode_pembayaran').val('tunai');
+            $('#status_pembayaran').val('lunas');
+
+            // Sembunyikan container opsional
+            $('#buktiContainer').hide();
+            $('#dpContainer').hide();
+            $('#pembayaranLunas').hide();
+            $('#alert-text').hide();
+
             // Reset index produk
             let index = 0;
 
@@ -1059,7 +1112,7 @@
                 <select class="form-select tipe-produk" name="items[${index}][tipe]" required>
                     <option value="">-- Pilih Produk --</option>
                     @foreach ($showProdak as $produk)
-                        <option value="{{ $produk->id }}" data-harga="{{ $produk->harga_per_meter }}">
+                        <option value="{{ $produk->id }}" data-harga="{{ $produk->total_harga }}">
                             {{ $produk->nama_bahan }}
                         </option>
                     @endforeach
@@ -1076,6 +1129,11 @@
             <div class="col-md-2">
                 <label class="form-label">Harga/m</label>
                 <input type="text" class="form-control rupiah-input harga-input" name="items[${index}][harga]" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Diskon Barang/m</label>
+                <input type="text" class="form-control rupiah-input" name="items[${index}][diskonbarang]"
+                    disabled>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Keterangan (Opsional)</label>

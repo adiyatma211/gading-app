@@ -174,11 +174,13 @@ class TransactionsController extends Controller
 
         $custName = $transaction->customer->nama;
         $logoPath = public_path('assets/logoSVG.SVG');
+        $logoPath2 = public_path('assets/logo2.png');
         $watermarkPath = public_path('assets/lunas2.png');
 
-        $pdfContent = view('Transaksi.v_nota', [
+
+        $pdfContent = view('Transaksi.v_notav1', [
             'transaction' => $transaction,
-            'logoPath' => $logoPath,
+            'logoPath' => $logoPath2,
             'watermarkPath' => $watermarkPath,
         ])->render();
 
@@ -189,6 +191,9 @@ class TransactionsController extends Controller
         $pdf = Pdf::loadHTML($pdfContent)
                   ->setPaper('a4', 'portrait')
                   ->output();
+        // $pdf = Pdf::loadHTML($pdfContent)
+        //            ->setPaper([0, 0, 216, 236], 'portrait') // 76mm x 83mm dalam satuan points (pt)
+        //             ->output();
 
         // Path folder public/nota/
         $path = public_path('nota/' . $fileName);
@@ -233,7 +238,7 @@ class TransactionsController extends Controller
                 'id_transaksi' => 'required|exists:transactions,id',
                 'tanggal_ambil' => 'nullable|date',
                 'diambil_oleh' => 'nullable|string|max:255',
-                'bukti_pengambilan' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
             ]);
 
             if ($validator->fails()) {
