@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Request;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\ProdukNewController;
 use App\Http\Controllers\HakAksesRoleController;
 use App\Http\Controllers\TransactionsController;
 use App\Http\Controllers\Pengaturan\RolesController;
@@ -45,12 +46,23 @@ Route::middleware(['auth', 'check.role:SuperAdmin,Owner,Super Admin'])->group(fu
 
     Route::get('/aksesRole', [PagesController::class, 'aksesRole'])->name('aksesRole');
 
+
+    // Produk
+// Route::get('/produk', [ProdukNewController::class, 'index'])->name('produk.index');
+Route::post('/produk', [ProdukNewController::class, 'store'])->name('produk.store');
+Route::get('/produk/{id}', [ProdukNewController::class, 'edit'])->name('produk.edit');
+Route::put('/produk/{id}/update', [ProdukNewController::class, 'update'])->name('produk.update');
+Route::delete('/produk/{id}', [ProdukNewController::class, 'destroy'])->name('produk.destroy');
+
+// Harga
+Route::put('/harga-produk/{id}', [ProdukNewController::class, 'updateHarga'])->name('harga.update');
+Route::delete('/harga-produk/{id}', [ProdukNewController::class, 'destroyHarga'])->name('harga.delete');
     Route::get('/produk', [PagesController::class, 'produk'])->name('produk');
-    Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
-    Route::post('/produk/store', [ProdukController::class, 'store'])->name('produk.store');
-    Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
-    Route::post('/produk/{id}/update', [ProdukController::class, 'update'])->name('produk.update');
-    Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
+    // Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
+    // Route::post('/produk/store', [ProdukController::class, 'store'])->name('produk.store');
+    // Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
+    // Route::post('/produk/{id}/update', [ProdukController::class, 'update'])->name('produk.update');
+    // Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
     Route::post('/bahan/{bahanId}/update', [ProdukController::class, 'updateBahan']);
     Route::delete('/bahan/{id}', [ProdukController::class, 'hapusBahan']);
 
@@ -67,6 +79,7 @@ Route::middleware(['auth', 'check.role:SuperAdmin,Owner,Super Admin'])->group(fu
 
 
     // Report
+
 
     Route::get('/report', [PagesController::class, 'transaksiReport'])->name('report');
     Route::post('/laporan/transaksi/data', [PagesController::class, 'getDataTransaksi'])->name('laporan.transaksi.data');

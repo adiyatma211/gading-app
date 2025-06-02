@@ -47,7 +47,7 @@ class PagesController extends Controller
     }
 
     public function produk(){
-        $produk = Produk::with('bahan')->get(); // ambil produk beserta bahan
+        $produk = Produk::with('hargas')->get(); // ambil produk beserta bahan
         return view('Pengaturan.Produk.v_produk', compact('produk'));
     }
 
@@ -67,7 +67,7 @@ class PagesController extends Controller
 
     public function transaksi()
     {
-        $showProdak = ProdukBahan::all();
+        $showProdak = Produk::with('hargas')->get('*');
         return view('Transaksi.v_transaksi',compact('showProdak'));
     }
 
