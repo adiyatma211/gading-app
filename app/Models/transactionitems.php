@@ -14,9 +14,13 @@ class transactionitems extends Model
     protected $guarded=['id'];
 
 
-    public function produkBahan()
+    public function produk()
     {
-        return $this->belongsTo(ProdukBahan::class, 'tipe_produk_id', 'id');
+        return $this->belongsTo(Produk::class, 'tipe_produk_id', 'id');
     }
+    // public function produk()
+    // {
+    //     return $this->belongsTo(Produk::class, 'tipe_produk_id');
+    // }
 
 }

@@ -224,7 +224,7 @@
                     <input type="hidden" name="alamat_nasabah" id="hidden_alamat">
 
                     <div id="mmtItemsContainer">
-                        <div class="mmt-item row g-3">
+                        {{-- <div class="mmt-item row g-3">
                             <span class="badge">Produk 1</span>
                             <div class="col-md-3">
                                 <label>Tipe Produk</label>
@@ -284,7 +284,7 @@
                                     Hapus
                                 </button>
                             </div>
-                        </div>
+                        </div> --}}
                     </div>
 
                     <div class="text-end mb-4">
@@ -563,7 +563,7 @@
             });
         }
 
-        // Handle dropdown changes for product selection
+
         function attachDropdownChangeHandler() {
             $('.tipe-produk').off('change').on('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
@@ -572,74 +572,61 @@
                 const tipeProduk = selectedOption.getAttribute('data-tipe-produk');
                 const currentIndex = $(this).attr('name').match(/\[(\d+)\]/)[1];
 
-
-                console.log('🔄 Pilih Produk:', produkId, 'Tipe:', tipeProduk, 'Index:', currentIndex);
-
-                // Hapus input sebelumnya
                 row.find('.dynamic-inputs').remove();
 
-                // HTML dinamis sesuai tipe produk
                 let dynamicHTML = '';
                 if (tipeProduk === 'per_meter') {
                     dynamicHTML = `
-                <div class="col-md-2 dynamic-inputs panjang-lebar">
-                    <label class="form-label">Panjang (m)</label>
-                    <input type="number" step="0.1" class="form-control panjang-input"
-                           name="items[${currentIndex}][panjang]" placeholder="0.0">
-                </div>
-                <div class="col-md-2 dynamic-inputs panjang-lebar">
-                    <label class="form-label">Lebar (m)</label>
-                    <input type="number" step="0.1" class="form-control lebar-input"
-                           name="items[${currentIndex}][lebar]" placeholder="0.0">
-                </div>
-            `;
+                    <div class="col-md-2 dynamic-inputs panjang-lebar">
+                        <label class="form-label">Panjang (m)</label>
+                        <input type="number" step="0.1" class="form-control panjang-input" name="items[${currentIndex}][panjang]" placeholder="0.0">
+                    </div>
+                    <div class="col-md-2 dynamic-inputs panjang-lebar">
+                        <label class="form-label">Lebar (m)</label>
+                        <input type="number" step="0.1" class="form-control lebar-input" name="items[${currentIndex}][lebar]" placeholder="0.0">
+                    </div>`;
                 } else if (tipeProduk === 'tiered' || tipeProduk === 'flat') {
                     dynamicHTML = `
-                <div class="col-md-2 dynamic-inputs qty">
-                    <label class="form-label">Jumlah (Qty)</label>
-                    <input type="number" class="form-control qty-input"
-                           name="items[${currentIndex}][qty]" placeholder="0" min="1">
-                </div>
-            `;
+                    <div class="col-md-2 dynamic-inputs qty">
+                        <label class="form-label">Jumlah (Qty)</label>
+                        <input type="number" class="form-control qty-input" name="items[${currentIndex}][qty]" placeholder="0" min="1">
+                    </div>`;
                 } else if (tipeProduk === 'custom') {
                     dynamicHTML = `
-                <div class="col-md-2 dynamic-inputs qty">
-                    <label class="form-label">Jumlah (Qty)</label>
-                    <input type="number" class="form-control qty-input"
-                           name="items[${currentIndex}][qty]" placeholder="0" min="1">
-                </div>
-                <div class="col-md-2 dynamic-inputs custom-inputs">
-                    <label class="form-label">Sisi</label>
-                    <select class="form-select" name="items[${currentIndex}][sisi]">
-                        <option value="1">1 Sisi</option>
-                        <option value="2">2 Sisi</option>
-                    </select>
-                </div>
-                <div class="col-md-2 dynamic-inputs laminasi">
-                    <label class="form-label">Laminasi</label>
-                    <select class="form-select" name="items[${currentIndex}][laminasi]">
-                        <option value="tidak">Tidak</option>
-                        <option value="ya">Ya</option>
-                    </select>
-                </div>
-            `;
+                    <div class="col-md-2 dynamic-inputs qty">
+                        <label class="form-label">Jumlah (Qty)</label>
+                        <input type="number" class="form-control qty-input" name="items[${currentIndex}][qty]" placeholder="0" min="1">
+                    </div>
+                    <div class="col-md-2 dynamic-inputs custom-inputs">
+                        <label class="form-label">Sisi</label>
+                        <select class="form-select" name="items[${currentIndex}][sisi]">
+                            <option value="1">1 Sisi</option>
+                            <option value="2">2 Sisi</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 dynamic-inputs laminasi">
+                        <label class="form-label">Laminasi</label>
+                        <select class="form-select" name="items[${currentIndex}][laminasi]">
+                            <option value="tidak">Tidak</option>
+                            <option value="ya">Ya</option>
+                        </select>
+                    </div>`;
                 }
 
-                // Tambahkan ke DOM
                 if (dynamicHTML) row.append(dynamicHTML);
 
-                // Set prices
                 const harga = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
                 const diskon = parseFloat(selectedOption.getAttribute('data-diskon')) || 0;
                 row.find('input[name$="[harga]"]').val(formatRupiah(harga.toString()));
                 row.find('input[name$="[diskonbarang]"]').val(formatRupiah(diskon.toString()));
-                // ❗ Penting: Tunggu 100ms agar elemen ter-render sebelum pasang event & hitung total
+
                 setTimeout(() => {
                     attachInputEventListeners(row);
                     calculateTotal();
                 }, 100);
             });
         }
+
 
 
         // Calculate total with improved debugging
@@ -655,7 +642,7 @@
                 const tipeProduk = selected.data('tipe-produk');
                 let itemTotal = 0;
 
-                console.log(`--- Row ${i+1} ---`);
+                console.log(`--- Row ${i + 1} ---`);
                 console.log('Produk ID:', produkId);
                 console.log('Tipe Produk:', tipeProduk);
 
@@ -664,38 +651,42 @@
                     return;
                 }
 
-                // FIX 1: Proper handling for per_meter products
                 if (tipeProduk === 'per_meter') {
-                    const panjang = parseFloat(row.find('input[name$="[panjang]"]').val()) || 0;
-                    const lebar = parseFloat(row.find('input[name$="[lebar]"]').val()) || 0;
+                    const panjang = parseFloat(row.find('.panjang-input').val()) || 0;
+                    const lebar = parseFloat(row.find('.lebar-input').val()) || 0;
                     const harga = parseFloat(row.find('input[name$="[harga]"]').val().replace(/[^0-9]/g, '')) || 0;
+                    const diskonbarang = parseFloat(row.find('input[name$="[diskonbarang]"]').val().replace(
+                        /[^0-9]/g, '')) || 0;
 
-                    console.log('PER_METER - Panjang:', panjang, 'Lebar:', lebar, 'Harga:', harga);
+                    console.log('PER_METER - Panjang:', panjang, 'Lebar:', lebar, 'Harga:', harga, 'diskonbarang:',
+                        diskonbarang);
 
                     if (panjang > 0 && lebar > 0) {
-                        itemTotal = panjang * lebar * harga;
-                        console.log('✅ Luas:', panjang * lebar, 'm² | Total:', itemTotal);
+                        itemTotal = panjang * lebar * harga - diskonbarang;
                     } else {
                         console.warn('⚠️ Invalid dimensions for per_meter');
                     }
-                }
-                // Other product types remain unchanged
-                else if (tipeProduk === 'tiered') {
-                    const harga = parseFloat(row.find('input[name$="[harga]"]').val().replace(/[^0-9]/g, '')) || 0;
-                    itemTotal = harga;
-                    console.log('✅ Tiered calculation:', harga);
                 } else if (tipeProduk === 'flat') {
                     const qty = parseInt(row.find('input[name$="[qty]"]').val()) || 0;
                     const harga = parseFloat(row.find('input[name$="[harga]"]').val().replace(/[^0-9]/g, '')) || 0;
+
                     itemTotal = qty * harga;
-                    console.log('✅ Flat calculation:', qty, 'x', harga, '=', itemTotal);
+                    console.log('FLAT - Qty:', qty, 'Harga:', harga, 'Total:', itemTotal);
+                } else if (tipeProduk === 'tiered') {
+                    const harga = parseFloat(row.find('input[name$="[harga]"]').val().replace(/[^0-9]/g, '')) || 0;
+                    const qty = parseInt(row.find('input[name$="[qty]"]').val()) || 0;
+
+                    itemTotal = qty * harga;
+                    console.log('TIERED - Harga (otomatis sesuai qty):', harga);
                 } else if (tipeProduk === 'custom') {
                     const qty = parseInt(row.find('input[name$="[qty]"]').val()) || 0;
                     const sisi = row.find('select[name$="[sisi]"]').val();
                     const laminasi = row.find('select[name$="[laminasi]"]').val();
+
                     const harga = getCustomHarga(produkId, sisi, laminasi);
                     itemTotal = qty * harga;
-                    console.log('✅ Custom calculation:', qty, 'x', harga, '=', itemTotal);
+
+                    console.log('CUSTOM - Qty:', qty, 'Harga:', harga, 'Total:', itemTotal);
                 }
 
                 subtotal += itemTotal;
@@ -703,7 +694,6 @@
                 console.log('Running subtotal:', subtotal);
             });
 
-            // Final calculations
             const desain = parseInt($('#biaya_desain').val().replace(/[^0-9]/g, '')) || 0;
             const diskon = parseInt($('#diskon').val().replace(/[^0-9]/g, '')) || 0;
             const dpValue = parseInt($('#dp').val().replace(/[^0-9]/g, '')) || 0;
@@ -711,9 +701,12 @@
             const totalAkhir = subtotal + desain - diskon;
             const sisaBayar = totalAkhir - dpValue;
 
-            // Update UI
             $('#total_raw').val(totalAkhir);
             $('#total').val(formatRupiah(totalAkhir.toString()));
+
+            // Update UI
+            // $('#total_raw').val(totalAkhir);
+            // $('#total').val(formatRupiah(totalAkhir.toString()));
             updateDpField();
 
             // Update nota ringkasan
@@ -724,43 +717,72 @@
                 $('#nota-dp').text(dpValue.toLocaleString('id-ID'));
                 $('#nota-total').text(sisaBayar.toLocaleString('id-ID'));
             }
+            window.subtotalTerakhir = subtotal;
         }
 
 
-        // Update DP field requirements
+
         function updateDpField() {
             let rawTotal = $('#total').val().replace(/[^0-9]/g, '');
             let totalAkhir = parseInt(rawTotal) || 0;
             const dpField = $('#dpContainer');
             const dpInput = $('#dp');
             const dpWarning = $('#dpWarning');
+            const statusPembayaran = $('#status_pembayaran').val()?.toLowerCase();
 
-            if (totalAkhir >= 300000) {
-                dpField.fadeIn(200);
-                let dpMin = Math.round(totalAkhir * 0.5);
-                dpInput.val(dpMin.toLocaleString());
-                dpInput.data('min-dp', dpMin);
-                dpInput.off('input').on('input', function() {
-                    let newDp = parseInt($(this).val().replace(/[^0-9]/g, '')) || 0;
-                    let minDp = $(this).data('min-dp');
-                    if (newDp < minDp && newDp > 0) {
-                        dpWarning.text(`DP minimal Rp${minDp.toLocaleString()}`).fadeIn(200);
-                    } else {
-                        dpWarning.hide();
-                    }
-                });
-            } else {
+            // Jika status pembayaran LUNAS, DP disembunyikan
+            if (statusPembayaran === 'lunas') {
                 dpField.fadeOut(200);
-                dpInput.val('').removeAttr('required');
+                dpInput.val('');
+                dpInput.removeAttr('required');
                 dpWarning.hide();
+            } else {
+                // Status bukan lunas → lanjut cek apakah total >= 300rb
+                if (totalAkhir >= 300000) {
+                    dpField.fadeIn(200);
+                    let dpMin = Math.round(totalAkhir * 0.5);
+
+                    dpInput.attr('required', true);
+                    dpInput.data('min-dp', dpMin);
+
+                    // Hanya tampilkan default jika DP masih kosong
+                    if (dpInput.val() === null || dpInput.val().trim() === '') {
+                        dpInput.val(dpMin.toLocaleString());
+                    }
+
+                    // Validasi saat user input DP
+                    dpInput.off('input').on('input', function() {
+                        let rawVal = $(this).val().replace(/[^0-9]/g, '');
+                        let newDp = parseInt(rawVal) || 0;
+                        let minDp = $(this).data('min-dp');
+
+                        if (!rawVal || newDp < minDp) {
+                            dpWarning.text(`DP minimal Rp${minDp.toLocaleString()}`).fadeIn(200);
+                        } else {
+                            dpWarning.hide();
+                        }
+
+                        $(this).val(formatRupiah(rawVal));
+                    });
+
+                } else {
+                    // Total < 300rb → DP disembunyikan
+                    dpField.fadeOut(200);
+                    dpInput.val('');
+                    dpInput.removeAttr('required');
+                    dpWarning.hide();
+                }
             }
         }
+
 
         // Add new item
         $('#btnAddItem').click(function() {
             const html = `
             <div class="mmt-item row g-3" style="display: none;">
-                <span class="badge bg-primary">Produk ${index + 1}</span>
+               <div class="col-12">
+                    <span class="badge bg-primary rounded-pill px-3 py-2">Produk ${index + 1}</span>
+                </div>
                 <div class="col-md-3">
                     <label class="form-label">Tipe Produk</label>
                     <select class="form-select tipe-produk" name="items[${index}][tipe]" required>
@@ -843,9 +865,15 @@
             const alamat = $('#alamat').val();
 
             if (!nama || !telepon || !alamat) {
-                alert('Harap isi semua Data Customer yang diperlukan');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Tidak Lengkap',
+                    text: 'Harap isi semua Data Customer yang diperlukan',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
+
 
             $('#summary-nama').text(nama);
             $('#summary-telepon').text(telepon);
@@ -894,9 +922,15 @@
             });
 
             if (!isValid) {
-                alert('Harap lengkapi semua data produk!');
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Data Produk Tidak Lengkap',
+                    text: 'Harap lengkapi semua data produk sebelum melanjutkan!',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
+
 
             // Update nota summary
             $('#nota-nama').text($('#summary-nama').text());
@@ -951,8 +985,30 @@
             });
         });
 
+        function isDpValid() {
+            const total = parseInt($('#total_raw').val().replace(/[^0-9]/g, '')) || 0;
+            const dp = parseInt($('#dp').val().replace(/[^0-9]/g, '')) || 0;
+            const status = $('#status_pembayaran').val()?.toLowerCase();
+            const dpMin = Math.round(total * 0.5);
+
+            // Jika bukan "lunas" dan DP di bawah 50%
+            if (status !== 'lunas' && dp < dpMin) {
+                return {
+                    valid: false,
+                    dpMin: dpMin,
+                    dpNow: dp
+                };
+            }
+
+            return {
+                valid: true
+            };
+        }
+
         // Submit Final Transaction
         $('#btnSelesaiTransaksi').click(function() {
+            calculateTotal();
+
             const payload = {
                 customer: {
                     nama: $('#hidden_nama').val(),
@@ -968,8 +1024,10 @@
                     tanggal_ambil: $('#tanggal_ambil').val(),
                     metode_pembayaran: $('#metode_pembayaran').val(),
                     status_pembayaran: $('#status_pembayaran').val(),
-                    dp: $('#dp').val(),
-                    total: $('#total_raw').val()
+                    dp: $('#dp').val() || 0,
+                    subtotal: window.subtotalTerakhir || 0,
+                    total: $('#total_raw').val(),
+                    bukti_pembayaran: $('#bukti_pembayaran').val() || null
                 }
             };
 
@@ -982,12 +1040,25 @@
                     sisi: $(this).find('select[name$="[sisi]"]').val() || null,
                     laminasi: $(this).find('select[name$="[laminasi]"]').val() || null,
                     harga: $(this).find('input[name$="[harga]"]').val(),
-                    diskonbarang: $(this).find('input[name$="[diskonbarang]"]').val(),
+                    diskonbarang: $(this).find('input[name$="[diskonbarang]"]').val().replace(
+                        /[^0-9]/g, '') || '0',
                     keterangan: $(this).find('textarea[name$="[keterangan]"]').val()
                 });
             });
 
+
             console.log('Payload to submit:', payload);
+            const cek = isDpValid();
+            if (!cek.valid) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'DP Tidak Cukup',
+                    text: `DP minimal adalah 50% dari total (Rp${cek.dpMin.toLocaleString()}). Saat ini hanya Rp${cek.dpNow.toLocaleString()}).`,
+                    confirmButtonText: 'Perbaiki'
+                });
+                $('#dp').focus();
+                return;
+            }
 
             $.ajax({
                 url: "{{ route('transaksi.store') }}",
@@ -998,16 +1069,58 @@
                 },
                 data: JSON.stringify(payload),
                 success: function(res) {
-                    alert('Transaksi berhasil disimpan!');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Transaksi Berhasil!',
+                        text: 'Apakah Anda ingin melihat nota sekarang?',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, tampilkan nota',
+                        cancelButtonText: 'Tidak'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const url = '/nota/' + res.nota_file;
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = url;
+
+                            document.body.appendChild(iframe);
+
+                            iframe.onload = function() {
+                                iframe.contentWindow.focus();
+                                iframe.contentWindow.print();
+                            };
+                        } else {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Transaksi disimpan',
+                                text: 'Nota tidak ditampilkan.',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        }
+
+                    });
+
                     console.log('Response:', res);
-                    // Optional: redirect or reset form
-                    // window.location.href = '/transaksi';
                 },
                 error: function(xhr) {
                     console.error('Error:', xhr.responseText);
-                    alert('Gagal menyimpan transaksi. Silakan coba lagi.');
+
+                    let message = 'Gagal menyimpan transaksi. Silakan coba lagi.';
+                    try {
+                        const json = JSON.parse(xhr.responseText);
+                        message = json.message || message;
+                    } catch (e) {}
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: message,
+                        confirmButtonText: 'Tutup'
+                    });
                 }
             });
+
         });
 
         // Initialize everything when document is ready
@@ -1022,6 +1135,10 @@
             // Format rupiah inputs
             $(document).on('keyup', '.rupiah-input', function() {
                 this.value = formatRupiah(this.value);
+            });
+            $('#status_pembayaran').on('change', function() {
+                updateDpField();
+                calculateTotal();
             });
 
             // Global fallback event listener

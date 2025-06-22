@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use App\Http\Requests\UpdatetransactionsRequest;
 
 
@@ -58,21 +60,127 @@ class TransactionsController extends Controller
         $faktur = "{$prefix}-{$number}-{$today}";
         return $faktur;
     }
+    // public function store(Request $request)
+    // {
+    //     $payload = $request->all();
+
+    //     DB::beginTransaction();
+    //     try {
+    //         // Logging awal payload
+    //         Log::info('Payload diterima untuk transaksi baru', ['payload' => $payload]);
+
+    //         // 1. Cari Customer berdasarkan nama dan telepon
+    //         $customer = customers::where('nama', $payload['customer']['nama'])
+    //             ->where('telepon', $payload['customer']['telepon'])
+    //             ->first();
+
+    //         // 2. Kalau belum ada, buat Customer baru
+    //         if (!$customer) {
+    //             $customer = customers::create([
+    //                 'nama' => $payload['customer']['nama'],
+    //                 'telepon' => $payload['customer']['telepon'],
+    //                 'email' => $payload['customer']['email'],
+    //                 'jenis_pelanggan' => $payload['customer']['jenis_pelanggan'],
+    //                 'alamat' => $payload['customer']['alamat'],
+    //                 'createdBy' => Auth::user()?->name ?? 'System',
+    //             ]);
+    //             Log::info('Customer baru berhasil disimpan', ['customer' => $customer]);
+    //         } else {
+    //             Log::info('Customer lama ditemukan', ['customer' => $customer]);
+    //         }
+    //         $fakturKode = $this->generateFakturNumber();
+    //         // 3. Simpan data Transaction (Nota)
+    //         $transaction = transactions::create([
+    //             'customer_id' => $customer->id,
+    //             'subtotal' => $payload['summary']['subtotal'],
+    //             'total' => $payload['summary']['total'],
+    //             'biaya_desain' => $payload['summary']['biaya_desain'],
+    //             'diskon' => $payload['summary']['diskon'],
+    //             'dp' => (float) str_replace(',', '', $payload['summary']['dp']),
+    //             'metode_pembayaran' => $payload['summary']['metode_pembayaran'],
+    //             'bukti_pembayaran' => $payload['summary']['bukti_pembayaran'],
+    //             'status_pembayaran' => $payload['summary']['status_pembayaran'],
+    //             'tanggal_ambil' => $payload['summary']['tanggal_ambil'],
+    //             'tanggal_transaksi' => now(),
+    //             'nomor_faktur'=> $fakturKode,
+    //             'createdBy' => Auth::user()?->name ?? 'System',
+    //         ]);
+
+    //         Log::info('Transaction berhasil disimpan', ['transaction' => $transaction]);
+
+    //         // 4. Simpan data Produk / Items
+    //        foreach ($payload['items'] as $item){
+    //             $newItem = transactionitems::create([
+    //                 'transaction_id' => $transaction->id,
+    //                 'tipe_produk_id' => $item['tipe'],
+    //                 'panjang' => $item['panjang'],
+    //                 'lebar' => $item['lebar'],
+    //                 'harga_per_meter' => (float) preg_replace('/[^0-9.]/', '', $item['harga']),
+    //                 'keterangan' => $item['keterangan'],
+    //                 'createdBy' => Auth::user()?->name ?? 'System',
+    //             ]);
+
+    //             Log::info('Item transaksi disimpan', ['item' => $newItem]);
+    //         }
+
+    //         // 5. Simpan ke history_payment
+    //         $history = histoypayment::create([
+    //             'customer_name' => $customer->nama,
+    //             'telepon' => $customer->telepon,
+    //             'email' => $customer->email,
+    //             'jenis_pelanggan' => $customer->jenis_pelanggan,
+    //             'alamat' => $customer->alamat,
+    //             'subtotal' => $transaction->subtotal,
+    //             'total' => $transaction->total,
+    //             'biaya_desain' => $transaction->biaya_desain,
+    //             'diskon' => $transaction->diskon,
+    //             'dp' => $transaction->dp,
+    //             'metode_pembayaran' => $transaction->metode_pembayaran,
+    //             'bukti_pembayaran' => $transaction->bukti_pembayaran,
+    //             'status_pembayaran' => $transaction->status_pembayaran,
+    //             'jumlah_item' => count($payload['items']),
+    //             'tanggal_transaksi' => now(),
+    //             'deleteSts' => 0,
+    //             'createdBy' => Auth::user()?->name ?? 'System',
+    //             'updatedBy' =>Auth::user()?->name ?? 'System',
+    //         ]);
+
+    //         Log::info('History pembayaran disimpan', ['history' => $history]);
+
+    //         DB::commit();
+
+    //         // Setelah COMMIT sukses, buatkan nota
+    //         $filename = $this->generateNotaFile($transaction);
+    //         Log::info('Transaction COMMIT sukses & Nota berhasil dibuat');
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Transaksi berhasil disimpan dan Nota berhasil dibuat.',
+    //             'transaction_id' => $transaction->id,
+    //             'nota_file' =>$filename
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         Log::error('Error saat simpan transaksi', ['error' => $e->getMessage()]);
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'Gagal menyimpan transaksi: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
     public function store(Request $request)
     {
         $payload = $request->all();
 
         DB::beginTransaction();
         try {
-            // Logging awal payload
             Log::info('Payload diterima untuk transaksi baru', ['payload' => $payload]);
 
-            // 1. Cari Customer berdasarkan nama dan telepon
             $customer = customers::where('nama', $payload['customer']['nama'])
                 ->where('telepon', $payload['customer']['telepon'])
                 ->first();
 
-            // 2. Kalau belum ada, buat Customer baru
             if (!$customer) {
                 $customer = customers::create([
                     'nama' => $payload['customer']['nama'],
@@ -86,42 +194,80 @@ class TransactionsController extends Controller
             } else {
                 Log::info('Customer lama ditemukan', ['customer' => $customer]);
             }
+
             $fakturKode = $this->generateFakturNumber();
-            // 3. Simpan data Transaction (Nota)
             $transaction = transactions::create([
                 'customer_id' => $customer->id,
                 'subtotal' => $payload['summary']['subtotal'],
                 'total' => $payload['summary']['total'],
                 'biaya_desain' => $payload['summary']['biaya_desain'],
                 'diskon' => $payload['summary']['diskon'],
-                'dp' => $payload['summary']['dp'],
+                'dp' => (float) str_replace(',', '', $payload['summary']['dp']),
                 'metode_pembayaran' => $payload['summary']['metode_pembayaran'],
                 'bukti_pembayaran' => $payload['summary']['bukti_pembayaran'],
                 'status_pembayaran' => $payload['summary']['status_pembayaran'],
                 'tanggal_ambil' => $payload['summary']['tanggal_ambil'],
                 'tanggal_transaksi' => now(),
-                'nomor_faktur'=> $fakturKode,
+                'nomor_faktur' => $fakturKode,
                 'createdBy' => Auth::user()?->name ?? 'System',
             ]);
 
             Log::info('Transaction berhasil disimpan', ['transaction' => $transaction]);
 
-            // 4. Simpan data Produk / Items
-            foreach ($payload['transaksi'] as $item) {
-                $newItem = transactionitems::create([
-                    'transaction_id' => $transaction->id,
-                    'tipe_produk_id' => $item['tipe'],
-                    'panjang' => $item['panjang'],
-                    'lebar' => $item['lebar'],
-                    'harga_per_meter' => str_replace(['.', ','], '', $item['harga']),
-                    'keterangan' => $item['keterangan'],
-                    'createdBy' => Auth::user()?->name ?? 'System',
-                ]);
+            foreach ($payload['items'] as $item) {
+                try {
+                    // Proses parsing & validasi seperti sebelumnya
 
-                Log::info('Item transaksi disimpan', ['item' => $newItem]);
+                    $tipe         = $item['tipe'] ?? null;
+                    $harga        = (float) preg_replace('/[^0-9]/', '', $item['harga'] ?? '0');
+                    $diskonBarang = (float) preg_replace('/[^0-9]/', '', $item['diskonbarang'] ?? '0');
+
+                    $panjang = isset($item['panjang']) && is_numeric($item['panjang']) ? (float) $item['panjang'] : null;
+                    $lebar   = isset($item['lebar']) && is_numeric($item['lebar']) ? (float) $item['lebar'] : null;
+                    $qty     = isset($item['qty']) && is_numeric($item['qty']) ? (int) $item['qty'] : null;
+
+                    $sisi     = $item['sisi'] ?? null;
+                    $laminasi = $item['laminasi'] ?? null;
+                    $keterangan = $item['keterangan'] ?? null;
+
+                    $totalHarga = 0;
+                    if ($panjang > 0 && $lebar > 0) {
+                        $totalHarga = ($panjang * $lebar * $harga) - $diskonBarang;
+                    } elseif ($qty > 0) {
+                        $totalHarga = ($qty * $harga) - $diskonBarang;
+                    } else {
+                        $totalHarga = $harga - $diskonBarang;
+                    }
+
+                    if ($totalHarga < 0) $totalHarga = 0;
+
+                    $newItem = TransactionItems::create([
+                        'transaction_id'    => $transaction->id,
+                        'tipe_produk_id'    => $tipe,
+                        'panjang'           => $panjang,
+                        'lebar'             => $lebar,
+                        'qty'               => $qty,
+                        'sisi'              => $sisi,
+                        'laminasi'          => $laminasi,
+                        'harga_per_meter'   => $harga,
+                        'diskon_barang'     => $diskonBarang,
+                        'total_harga'       => $totalHarga,
+                        'keterangan'        => $keterangan,
+                        'createdBy'         => Auth::user()?->name ?? 'System',
+                    ]);
+
+                    Log::info("Berhasil simpan item", ['item' => $newItem]);
+
+                } catch (\Exception $e) {
+                    Log::error("Gagal simpan item", [
+                        'item' => $item,
+                        'error' => $e->getMessage()
+                    ]);
+                    continue; // Lanjut ke item berikutnya
+                }
             }
 
-            // 5. Simpan ke history_payment
+
             $history = histoypayment::create([
                 'customer_name' => $customer->nama,
                 'telepon' => $customer->telepon,
@@ -136,26 +282,26 @@ class TransactionsController extends Controller
                 'metode_pembayaran' => $transaction->metode_pembayaran,
                 'bukti_pembayaran' => $transaction->bukti_pembayaran,
                 'status_pembayaran' => $transaction->status_pembayaran,
-                'jumlah_item' => count($payload['transaksi']),
+                'jumlah_item' => count($payload['items']),
                 'tanggal_transaksi' => now(),
                 'deleteSts' => 0,
                 'createdBy' => Auth::user()?->name ?? 'System',
-                'updatedBy' =>Auth::user()?->name ?? 'System',
+                'updatedBy' => Auth::user()?->name ?? 'System',
             ]);
 
             Log::info('History pembayaran disimpan', ['history' => $history]);
 
             DB::commit();
 
-            // Setelah COMMIT sukses, buatkan nota
+            // Generate dan simpan PDF nota
             $filename = $this->generateNotaFile($transaction);
-            Log::info('Transaction COMMIT sukses & Nota berhasil dibuat');
+            Log::info('Nota berhasil dibuat dan disimpan.');
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Transaksi berhasil disimpan dan Nota berhasil dibuat.',
+                'message' => 'Transaksi berhasil disimpan, nota dibuat & dicetak.',
                 'transaction_id' => $transaction->id,
-                'nota_file' =>$filename
+                'nota_file' => $filename
             ]);
 
         } catch (\Exception $e) {
@@ -167,66 +313,70 @@ class TransactionsController extends Controller
             ], 500);
         }
     }
+
     private function generateNotaFile($transaction): string
-    {
-        // Ambil data transaksi lengkap
-        $transaction = transactions::with(['customer', 'items'])->findOrFail($transaction->id);
+{
+    $transaction = Transactions::with(['customer', 'items.produk'])->find($transaction->id);
+    $custName = $transaction->customer->nama;
+    $logoPath = public_path('assets/logoSVG.SVG');
+    $logoPath2 = public_path('assets/logoSVG.svg');
+    $watermarkPath = public_path('assets/lunas2.png');
 
-        $custName = $transaction->customer->nama;
-        $logoPath = public_path('assets/logoSVG.SVG');
-        $logoPath2 = public_path('assets/logo2.png');
-        $watermarkPath = public_path('assets/lunas2.png');
+    // === 1. Generate PDF versi pertama (nota_file) ===
+    $pdfContent1 = view('Transaksi.v_notav1', [
+        'transaction' => $transaction,
+        'logoPath' => $logoPath2,
+        'watermarkPath' => $watermarkPath,
+    ])->render();
 
+    $fileName1 = 'nota_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
+    $pdf1 = Pdf::loadHTML($pdfContent1)
+        ->setPaper([0, 0, 164.41, 1000], 'portrait')
+        ->output();
+    file_put_contents(public_path('nota/' . $fileName1), $pdf1);
 
-        $pdfContent = view('Transaksi.v_notav1', [
-            'transaction' => $transaction,
-            'logoPath' => $logoPath2,
-            'watermarkPath' => $watermarkPath,
-        ])->render();
+    // === 2. Generate PDF versi kedua (nota_file_dua) ===
+    $pdfContent2 = view('Transaksi.v_nota', [
+        'transaction' => $transaction,
+        'logoPath' => $logoPath2,
+        'watermarkPath' => $watermarkPath,
+    ])->render();
 
-        // Generate nama file PDF
-        $fileName = 'nota_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
+    $fileName2 = 'nota_dua_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
+    $pdf2 = Pdf::loadHTML($pdfContent2)
+        ->setPaper('a4', 'landscape')
+        ->output();
+    file_put_contents(public_path('nota/' . $fileName2), $pdf2);
 
-        // Generate PDF
-        $pdf = Pdf::loadHTML($pdfContent)
-                  ->setPaper('a4', 'portrait')
-                  ->output();
-        // $pdf = Pdf::loadHTML($pdfContent)
-        //            ->setPaper([0, 0, 216, 236], 'portrait') // 76mm x 83mm dalam satuan points (pt)
-        //             ->output();
+    // === 3. Update ke tabel transactions ===
+    $transaction->update([
+        'nota_file' => $fileName1,
+        'nota_file_dua' => $fileName2
+    ]);
 
-        // Path folder public/nota/
-        $path = public_path('nota/' . $fileName);
+    // === 4. Simpan ke history_nota hanya file utama ===
+    $lastId = Transactions::max('id') + 1;
+    $nomorFaktur = 'FK-' . str_pad($lastId, 3, '0', STR_PAD_LEFT) . '/' . date('m') . '/' . date('Y');
 
-        // Simpan file PDF langsung ke public/nota/
-        file_put_contents($path, $pdf);
+    historynota::create([
+        'transaction_id' => $transaction->id,
+        'nomor_faktur'   => $nomorFaktur,
+        'customer_id'    => $transaction->customer_id,
+        'nota_file'      => $fileName1,
+        'tanggal_cetak'  => now(),
+        'deleteSts'      => 0,
+        'createdBy'      => Auth::user()?->name ?? 'System',
+        'updatedBy'      => Auth::user()?->name ?? 'System',
+    ]);
 
-        // Update transactions
-        $transaction->update([
-            'nota_file' => $fileName
-        ]);
+    Log::info('Nota utama & kedua berhasil dibuat', [
+        'nota_file' => $fileName1,
+        'nota_file_dua' => $fileName2,
+    ]);
 
-        // Buat nomor faktur
-        $lastId = transactions::max('id') + 1;
-        $nomorFaktur = 'FK-' . str_pad($lastId, 3, '0', STR_PAD_LEFT) . '/' . date('m') . '/' . date('Y');
+    return $fileName1; // bisa juga return array jika perlu
+}
 
-        // Simpan ke history_nota
-        historynota::create([
-            'transaction_id' => $transaction->id,
-            'nomor_faktur' => $nomorFaktur,
-            'customer_id' => $transaction->customer_id,
-            'nota_file' => $fileName,
-            'tanggal_cetak' => now(),
-            'deleteSts' => 0,
-            'createdBy' => Auth::user()?->name ?? 'System',
-            'updatedBy' => Auth::user()?->name ?? 'System',
-        ]);
-
-        Log::info('Nota berhasil dibuat dan disimpan langsung ke public/nota/', ['file' => $fileName]);
-
-        // 🔁 Kembalikan nama file agar bisa dipakai di response
-        return $fileName;
-    }
 
 
 

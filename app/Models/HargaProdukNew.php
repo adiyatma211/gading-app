@@ -11,16 +11,6 @@ class HargaProdukNew extends Model
 
     protected $table = 'harga_produk_new'; // Nama tabel yang benar
 
-    // protected $fillable = [
-    //     'produk_id',
-    //     'min_qty',
-    //     'max_qty',
-    //     'sisi',
-    //     'laminasi',
-    //     'harga',
-    //     'satuan',
-    //     'diso',
-    // ];
 
     protected $guarded =['id'];
 

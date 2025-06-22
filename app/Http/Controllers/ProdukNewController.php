@@ -6,66 +6,138 @@ use App\Models\Produk;
 use Illuminate\Http\Request;
 use App\Models\HargaProdukNew;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class ProdukNewController extends Controller
 {
+    // public function store(Request $request)
+    // {
+    //      Log::info('Payload produk diterima:', $request->all());
+    //     // Validasi input
+    //     $validator = Validator::make($request->all(), [
+    //         'nama_produk' => 'required|string|max:255',
+    //         'tipe_produk' => ['required', Rule::in(['per_meter', 'tiered', 'flat', 'custom'])],
+    //         'harga.*.harga' => 'required|numeric|min:0',
+    //         'harga.*.diskon' => 'nullable|numeric|min:0',
+    //         'harga.*.min_qty' => 'nullable|integer',
+    //         'harga.*.max_qty' => 'nullable|integer',
+    //         'harga.*.sisi' => 'nullable|in:1,2',
+    //         'harga.*.laminasi' => 'nullable|boolean',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Validasi gagal.',
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     try {
+    //         // Simpan produk
+    //         $produk = Produk::create([
+    //             'nama_produk'   => $request->nama_produk,
+    //             'tipe_produk'   => $request->tipe_produk,
+    //             'status'        => '1'
+    //         ]);
+
+    //         // Simpan harga
+    //         foreach ($request->harga as $hargaData) {
+    //             HargaProdukNew::create([
+    //                 'produk_id' => $produk->id,
+    //                 'harga' => $hargaData['harga'] ?? 0,
+    //                 'min_qty' => $hargaData['min_qty'] ?? null,
+    //                 'max_qty' => $hargaData['max_qty'] ?? null,
+    //                 'sisi' => $hargaData['sisi'] ?? null,
+    //                 'diskon' => $hargaData['diskon'] ?? null,
+    //                 'laminasi' => $hargaData['laminasi'] ?? false,
+    //             ]);
+    //         }
+
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Produk berhasil ditambahkan'
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Gagal menyimpan produk',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
     public function store(Request $request)
-    {
-        // Validasi input
-        $validator = Validator::make($request->all(), [
-            'nama_produk' => 'required|string|max:255',
-            'tipe_produk' => ['required', Rule::in(['per_meter', 'tiered', 'flat', 'custom'])],
-            'harga.*.harga' => 'required|numeric|min:0',
-            'harga.*.diskon' => 'nullable|numeric|min:0',
-            'harga.*.min_qty' => 'nullable|integer',
-            'harga.*.max_qty' => 'nullable|integer',
-            'harga.*.sisi' => 'nullable|in:1,2',
-            'harga.*.laminasi' => 'nullable|boolean',
-        ]);
+{
+    Log::info('Payload produk diterima:', $request->all());
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Validasi gagal.',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+    // 🔁 Ubah nilai 'laminasi' dari 'on' ke boolean true/false
+    $data = $request->all();
 
-        try {
-            // Simpan produk
-            $produk = Produk::create([
-                'nama_produk'   => $request->nama_produk,
-                'tipe_produk'   => $request->tipe_produk,
-                'status'        => '1'
-            ]);
-
-            // Simpan harga
-            foreach ($request->harga as $hargaData) {
-                HargaProdukNew::create([
-                    'produk_id' => $produk->id,
-                    'harga' => $hargaData['harga'] ?? 0,
-                    'min_qty' => $hargaData['min_qty'] ?? null,
-                    'max_qty' => $hargaData['max_qty'] ?? null,
-                    'sisi' => $hargaData['sisi'] ?? null,
-                    'diskon' => $hargaData['diskon'] ?? null,
-                    'laminasi' => $hargaData['laminasi'] ?? false,
-                ]);
-            }
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Produk berhasil ditambahkan'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Gagal menyimpan produk',
-                'error' => $e->getMessage()
-            ], 500);
+    if (isset($data['harga']) && is_array($data['harga'])) {
+        foreach ($data['harga'] as $index => $hargaItem) {
+            $laminasi = $hargaItem['laminasi'] ?? null;
+            $data['harga'][$index]['laminasi'] = ($laminasi === 'on' || $laminasi === 1 || $laminasi === '1') ? true : false;
         }
     }
+
+    // Validasi input
+    $validator = Validator::make($data, [
+        'nama_produk' => 'required|string|max:255',
+        'tipe_produk' => ['required', Rule::in(['per_meter', 'tiered', 'flat', 'custom'])],
+        'harga.*.harga' => 'required|numeric|min:0',
+        'harga.*.diskon' => 'nullable|numeric|min:0',
+        'harga.*.min_qty' => 'nullable|integer',
+        'harga.*.max_qty' => 'nullable|integer',
+        'harga.*.sisi' => 'nullable|in:1,2',
+        'harga.*.laminasi' => 'nullable|boolean',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Validasi gagal.',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        // Simpan produk
+        $produk = Produk::create([
+            'nama_produk'   => $data['nama_produk'],
+            'tipe_produk'   => $data['tipe_produk'],
+            'status'        => '1'
+        ]);
+
+        // Simpan harga
+        foreach ($data['harga'] as $hargaData) {
+            HargaProdukNew::create([
+                'produk_id' => $produk->id,
+                'harga' => $hargaData['harga'] ?? 0,
+                'min_qty' => $hargaData['min_qty'] ?? null,
+                'max_qty' => $hargaData['max_qty'] ?? null,
+                'sisi' => $hargaData['sisi'] ?? null,
+                'diskon' => $hargaData['diskon'] ?? null,
+                'laminasi' => $hargaData['laminasi'] ?? false, // Sudah boolean
+            ]);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Produk berhasil ditambahkan'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Gagal menyimpan produk',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
     // 🔹 Edit Produk
     public function edit($id)

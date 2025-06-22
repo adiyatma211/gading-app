@@ -36,7 +36,7 @@ class PagesController extends Controller
         ->orderBy(DB::raw("YEAR(created_at), MONTH(created_at)"))
         ->limit(12)
         ->get();
-        $pesanbaru = transactions::with(['customer', 'items.produkBahan'])
+        $pesanbaru = transactions::with(['customer', 'items.produk'])
             ->orderBy('id', 'asc')
             ->paginate(5);
 
@@ -73,23 +73,23 @@ class PagesController extends Controller
 
     public function cetakNota($id)
     {
-        $transaction = transactions::with(['customer', 'items.produkBahan'])->findOrFail($id);
+        $transaction = transactions::with(['customer', 'items.produk'])->findOrFail($id);
 
-        // $transaction = Transactions::with(['customer', 'items','produkBahan'])->findOrFail($id);
-        // $transaction = transactions::with('items.produkBahan')->findOrFail($id);
+        // $transaction = Transactions::with(['customer', 'items','Produk'])->findOrFail($id);
+        // $transaction = transactions::with('items.produk')->findOrFail($id);
         return view('Transaksi.v_nota', compact('transaction'));
     }
 
     public function transaksiTaabel()
     {
-        $transaction = transactions::with(['customer', 'items.produkBahan'])
+        $transaction = transactions::with(['customer', 'items.produk'])
                     ->orderBy('id', 'asc')  // Tambahkan ini untuk order by id asc
                     ->get();
         return view('Transaksi.v_tabelTransaksi', compact('transaction'));
     }
     public function transaksiReport()
     {
-        $transaction = transactions::with(['customer', 'items.produkBahan'])
+        $transaction = transactions::with(['customer', 'items.produk'])
                     ->orderBy('id', 'asc')  // Tambahkan ini untuk order by id asc
                     ->get();
         return view('report.v_report', compact('transaction'));
@@ -103,7 +103,7 @@ class PagesController extends Controller
         Log::info('DataTables Request', $request->all());
 
         // Buat query dasar
-        $query = transactions::with(['customer', 'items.produkBahan']);
+        $query = transactions::with(['customer', 'items.produk']);
 
         // Cek jumlah data awal
         $initialCount = $query->count();
@@ -210,7 +210,7 @@ class PagesController extends Controller
         ]);
 
         // Inisialisasi query builder
-        $query = transactions::with(['customer', 'items.produkBahan']);
+        $query = transactions::with(['customer', 'items.produk']);
 
         // Deteksi filter ganda (user mengisi lebih dari satu filter)
         if (

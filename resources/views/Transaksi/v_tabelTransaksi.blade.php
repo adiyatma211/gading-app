@@ -21,6 +21,7 @@
                                 <th>Tanggal Transaksi</th>
                                 <th>Tanggal Diambil</th>
                                 <th>Nota</th>
+                                <th>Nota Dua</th>
                                 <th>Tanggal Selesai</th>
                                 <th>Setatus Pemesanan</th>
                                 <th>Status Transaksi</th>
@@ -43,6 +44,20 @@
                                                 style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
                                                 class="nota-link">
                                                 {{ $a->nota_file }}
+                                            </a>
+                                        @else
+                                            <span class="text-muted"
+                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;">Nota
+                                                Belum dibuat</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($a->nota_file_dua)
+                                            <a href="{{ asset('nota/' . $a->nota_file_dua) }}" target="_blank"
+                                                rel="noopener noreferrer"
+                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
+                                                class="nota-link">
+                                                {{ $a->nota_file_dua }}
                                             </a>
                                         @else
                                             <span class="text-muted"
