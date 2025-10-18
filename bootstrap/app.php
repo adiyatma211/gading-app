@@ -11,7 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'check.role' => App\Http\Middleware\PermissionAkses::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -1,0 +1,70 @@
+/* Dark Mode Override khusus untuk halaman Transaksi */
+body.dark .mmt-item {
+    background-color: #1e1e2f;
+    border-color: #2c2c3a;
+    box-shadow: none;
+}
+
+body.dark .mmt-item .form-control,
+body.dark .mmt-item .form-select {
+    background-color: #2c2c3a;
+    color: #f8f9fa;
+    border-color: #3d3d50;
+}
+
+body.dark .mmt-item .form-control::placeholder {
+    color: #aaaaaa;
+}
+
+body.dark .input-group-text {
+    background-color: #198754;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+body.dark #total {
+    background-color: #2c2c3a;
+    color: white;
+    border: none;
+    font-weight: bold;
+    text-align: right;
+}
+
+body.dark .mmt-item .badge {
+    background-color: #3b82f6;
+    color: #fff;
+    font-size: 0.6rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.375rem;
+    position: absolute;
+    top: -0.6rem;
+    left: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: auto;
+    height: auto;
+    z-index: 2;
+}
+
+/* Button outline adaptasi dark mode */
+/* body.dark .btn-outline-danger {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+body.dark .btn-outline-danger:hover {
+    background-color: #ff6b6b;
+    color: #fff;
+}
+
+body.dark .btn-outline-primary {
+    color: #4ea8ff;
+    border-color: #4ea8ff;
+}
+
+body.dark .btn-outline-primary:hover {
+    background-color: #4ea8ff;
+    color: #fff;
+} */
