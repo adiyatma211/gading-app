@@ -645,13 +645,6 @@
                             <option value="1">1 Sisi</option>
                             <option value="2">2 Sisi</option>
                         </select>
-                    </div>
-                    <div class="col-md-2 dynamic-inputs laminasi">
-                        <label class="form-label">Laminasi</label>
-                        <select class="form-select" name="items[${currentIndex}][laminasi]">
-                            <option value="tidak">Tidak</option>
-                            <option value="ya">Ya</option>
-                        </select>
                     </div>`;
                 }
 
@@ -723,7 +716,7 @@
                 } else if (tipeProduk === 'custom') {
                     const qty = parseInt(row.find('input[name$="[qty]"]').val()) || 0;
                     const sisi = row.find('select[name$="[sisi]"]').val();
-                    const laminasi = row.find('select[name$="[laminasi]"]').val();
+                    const laminasi = row.find('select[name$="[laminasi]"]').val() || 'tidak';
 
                     const harga = getCustomHarga(produkId, sisi, laminasi);
                     itemTotal = qty * harga;
