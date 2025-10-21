@@ -9,7 +9,8 @@
             font-family: Arial, sans-serif;
             font-size: 5px;
             color: #000;
-            margin: 0;
+            /* Center the 72mm content in print preview/browser */
+            margin: 0 auto;
             width: {{ $thermalWidth ?? 72 }}mm;
             padding: 0;
         }
@@ -22,8 +23,16 @@
         .nota {
             /* background: red; */
             width: 55mm;
-            margin-right: 16mm;
+            /* Center the inner receipt block */
+            margin: 0 auto;
             padding: 0;
+        }
+
+        @media print {
+            html, body {
+                width: {{ $thermalWidth ?? 72 }}mm;
+                margin: 0 auto; /* ensure centering on A4/Letter previews */
+            }
         }
 
 
