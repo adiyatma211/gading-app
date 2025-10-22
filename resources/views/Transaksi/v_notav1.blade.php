@@ -134,18 +134,30 @@
         @endforeach
 
 
+        @php
+            $subtotalCalc = $transaction->items->sum('total_harga');
+            $diskon = (float) ($transaction->diskon ?? 0);
+            $biayaDesain = (float) ($transaction->biaya_desain ?? 0);
+            $dp = (float) ($transaction->dp ?? 0);
+            $grandTotal = max(0, $subtotalCalc + $biayaDesain - $diskon);
+            $sisa = max(0, $grandTotal - $dp);
+        @endphp
         <div class="text-right">
             <p><strong>Metode Pembayaran:</strong> {{ strtoupper($transaction->metode_pembayaran) }}</p>
-            <p><strong>Sub Total:</strong> Rp {{ number_format($transaction->subtotal, 0, ',', '.') }}</p>
-            <p><strong>Total:</strong> Rp {{ number_format($transaction->total, 0, ',', '.') }}</p>
-            @if ($transaction->metode_pembayaran === 'tunai')
-                <p><strong>Bayar (Cash):</strong> Rp {{ number_format($transaction->total, 0, ',', '.') }}</p>
-            @else
-                <p><strong>Bayar ({{ \Illuminate\Support\Str::title($transaction->metode_pembayaran) }}):</strong> Rp
-                    {{ number_format($transaction->total, 0, ',', '.') }}</p>
+            <p><strong>Sub Total:</strong> Rp {{ number_format($subtotalCalc, 0, ',', '.') }}</p>
+            @if($diskon > 0)
+                <p><strong>Diskon:</strong> Rp {{ number_format($diskon, 0, ',', '.') }}</p>
             @endif
-            {{-- <p><strong>Kembali:</strong> Rp {{ number_format($transaction->total - $transaction->dp, 0, ',', '.') }}
-            </p> --}}
+            @if($biayaDesain > 0)
+                <p><strong>Biaya Desain:</strong> Rp {{ number_format($biayaDesain, 0, ',', '.') }}</p>
+            @endif
+            @if($dp > 0)
+                <p><strong>DP:</strong> Rp {{ number_format($dp, 0, ',', '.') }}</p>
+            @endif
+            <p><strong>Total:</strong> Rp {{ number_format($grandTotal, 0, ',', '.') }}</p>
+            @if($dp > 0)
+                <p><strong>Sisa:</strong> Rp {{ number_format($sisa, 0, ',', '.') }}</p>
+            @endif
         </div>
 
         <div class="footer">

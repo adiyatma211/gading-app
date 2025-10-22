@@ -535,11 +535,32 @@ class TransactionsController extends Controller
                 $printer->text(str_repeat('-', 32) . "\n");
             }
 
-            $printer->text('Subtotal: Rp ' . number_format($trx->subtotal, 0, ',', '.') . "\n");
-            $printer->text('Diskon  : Rp ' . number_format($trx->diskon, 0, ',', '.') . "\n");
-            $printer->text('Desain  : Rp ' . number_format($trx->biaya_desain, 0, ',', '.') . "\n");
-            $printer->text('DP      : Rp ' . number_format($trx->dp, 0, ',', '.') . "\n");
-            $printer->text('Total   : Rp ' . number_format($trx->total, 0, ',', '.') . "\n");
+            // Hitung ulang subtotal dari item untuk memastikan diskon terakomodasi benar
+            $subtotalCalc = 0;
+            foreach ($trx->items as $it) {
+                $subtotalCalc += (float) ($it->total_harga ?? 0);
+            }
+
+            $diskon = (float) ($trx->diskon ?? 0);
+            $biayaDesain = (float) ($trx->biaya_desain ?? 0);
+            $dp = (float) ($trx->dp ?? 0);
+            $grandTotal = max(0, $subtotalCalc + $biayaDesain - $diskon);
+            $sisa = max(0, $grandTotal - $dp);
+
+            $printer->text('Subtotal: Rp ' . number_format($subtotalCalc, 0, ',', '.') . "\n");
+            if ($diskon > 0) {
+                $printer->text('Diskon  : Rp ' . number_format($diskon, 0, ',', '.') . "\n");
+            }
+            if ($biayaDesain > 0) {
+                $printer->text('Desain  : Rp ' . number_format($biayaDesain, 0, ',', '.') . "\n");
+            }
+            if ($dp > 0) {
+                $printer->text('DP      : Rp ' . number_format($dp, 0, ',', '.') . "\n");
+            }
+            $printer->text('Total   : Rp ' . number_format($grandTotal, 0, ',', '.') . "\n");
+            if ($dp > 0) {
+                $printer->text('Sisa    : Rp ' . number_format($sisa, 0, ',', '.') . "\n");
+            }
             $printer->feed(2);
             $printer->setJustification(Printer::JUSTIFY_CENTER);
             $printer->text("Terima Kasih\n");
