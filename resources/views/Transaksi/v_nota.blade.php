@@ -123,8 +123,14 @@
                     <td>{{ $a->panjang }} x {{ $a->lebar }}</td>
                     <td>{{ number_format($a->harga_per_meter, 0, ',', '.') }}</td>
                     <td>1</td>
-                    <td>{{ number_format($a->harga_per_meter * $a->panjang * $a->lebar, 0, ',', '.') }}</td>
+                    <td>{{ number_format($a->total_harga ?? ($a->harga_per_meter * $a->panjang * $a->lebar), 0, ',', '.') }}</td>
                 </tr>
+                @if (($a->diskon_barang ?? 0) > 0)
+                    <tr>
+                        <td colspan="6" class="text-right">Diskon Item</td>
+                        <td>{{ number_format($a->diskon_barang, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
             @endforeach
 
             <tr>

@@ -129,6 +129,10 @@
                 @if ($item->keterangan)
                     (Ket: {{ $item->keterangan }})
                 @endif
+
+                @if (($item->diskon_barang ?? 0) > 0)
+                    - Diskon: Rp {{ number_format($item->diskon_barang, 0, ',', '.') }}
+                @endif
             </small>
             <hr class="dashed">
         @endforeach

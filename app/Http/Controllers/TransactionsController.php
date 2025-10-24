@@ -249,11 +249,15 @@ class TransactionsController extends Controller
 
                     $totalHarga = 0;
                     if ($panjang > 0 && $lebar > 0) {
-                        $totalHarga = ($panjang * $lebar * $harga) - $diskonBarang;
+                        // Diskon barang diasumsikan per meter: kurangi harga satuan terlebih dahulu
+                        $hargaNet = max($harga - $diskonBarang, 0);
+                        $totalHarga = ($panjang * $lebar * $hargaNet);
                     } elseif ($qty > 0) {
-                        $totalHarga = ($qty * $harga) - $diskonBarang;
+                        // Untuk qty-based, diskon dianggap per item (jika ada)
+                        $hargaNet = max($harga - $diskonBarang, 0);
+                        $totalHarga = ($qty * $hargaNet);
                     } else {
-                        $totalHarga = $harga - $diskonBarang;
+                        $totalHarga = max($harga - $diskonBarang, 0);
                     }
 
                     if ($totalHarga < 0) $totalHarga = 0;

@@ -324,10 +324,9 @@
                             <input type="text" name="biaya_desain" id="biaya_desain"
                                 class="form-control rupiah-input" value="0">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none">
                             <label class="form-label">Diskon (Rp)</label>
-                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input"
-                                value="0">
+                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input" value="0">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Tanggal Ambil / Selesai</label>
@@ -549,6 +548,20 @@
             return prefix + rupiah;
         }
 
+        // Sanitize desimal: pakai titik, bukan koma
+        function sanitizeDecimalString(str) {
+            if (str == null) return '';
+            let s = String(str).replace(/,/g, '.'); // ganti koma -> titik
+            // sisakan digit dan titik
+            s = s.replace(/[^0-9.]/g, '');
+            // hanya satu titik diperbolehkan
+            const parts = s.split('.');
+            if (parts.length > 2) {
+                s = parts[0] + '.' + parts.slice(1).join('');
+            }
+            return s;
+        }
+
         // Global variables
         // window.customHargaData = {};
         let index = 0;
@@ -603,6 +616,12 @@
 
                 calculateTotal();
             });
+
+            // Khusus panjang/lebar: paksa titik sebagai desimal
+            row.on('input', '.panjang-input, .lebar-input', function() {
+                const cleaned = sanitizeDecimalString(this.value);
+                if (this.value !== cleaned) this.value = cleaned;
+            });
         }
 
 
@@ -621,11 +640,11 @@
                     dynamicHTML = `
                     <div class="col-md-2 dynamic-inputs panjang-lebar">
                         <label class="form-label">Panjang (m)</label>
-                        <input type="number" step="0.1" class="form-control panjang-input" name="items[${currentIndex}][panjang]" placeholder="0.0">
+                        <input type="number" step="0.1" inputmode="decimal" lang="en" class="form-control panjang-input" name="items[${currentIndex}][panjang]" placeholder="0.0">
                     </div>
                     <div class="col-md-2 dynamic-inputs panjang-lebar">
                         <label class="form-label">Lebar (m)</label>
-                        <input type="number" step="0.1" class="form-control lebar-input" name="items[${currentIndex}][lebar]" placeholder="0.0">
+                        <input type="number" step="0.1" inputmode="decimal" lang="en" class="form-control lebar-input" name="items[${currentIndex}][lebar]" placeholder="0.0">
                     </div>`;
                 } else if (tipeProduk === 'tiered' || tipeProduk === 'flat') {
                     dynamicHTML = `
@@ -697,7 +716,9 @@
                         diskonbarang);
 
                     if (panjang > 0 && lebar > 0) {
-                        itemTotal = panjang * lebar * harga - diskonbarang;
+                        // Diskon dianggap per meter -> turunkan harga satuan terlebih dulu
+                        const hargaNet = Math.max(harga - diskonbarang, 0);
+                        itemTotal = panjang * lebar * hargaNet;
                     } else {
                         console.warn('⚠️ Invalid dimensions for per_meter');
                     }
@@ -1313,6 +1334,12 @@
             // Format rupiah inputs
             $(document).on('keyup', '.rupiah-input', function() {
                 this.value = formatRupiah(this.value);
+            });
+
+            // Panjang/Lebar: paksa titik sebagai desimal dan bersihkan karakter selain angka/titik
+            $(document).on('input', 'input[name$="[panjang]"], input[name$="[lebar]"]', function() {
+                const cleaned = sanitizeDecimalString(this.value);
+                if (this.value !== cleaned) this.value = cleaned;
             });
             $('#status_pembayaran').on('change', function() {
                 updateDpField();
