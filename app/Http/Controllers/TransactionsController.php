@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use App\Models\histoypayment;
 use Illuminate\Support\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use App\Models\transactionitems;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -177,36 +179,51 @@ class TransactionsController extends Controller
         try {
             Log::info('Payload diterima untuk transaksi baru', ['payload' => $payload]);
 
-            $customer = customers::where('nama', $payload['customer']['nama'])
-                ->where('telepon', $payload['customer']['telepon'])
-                ->first();
-
-            if (!$customer) {
-                $customer = customers::create([
-                    'nama' => $payload['customer']['nama'],
-                    'telepon' => $payload['customer']['telepon'],
-                    'email' => $payload['customer']['email'],
-                    'jenis_pelanggan' => $payload['customer']['jenis_pelanggan'],
-                    'alamat' => $payload['customer']['alamat'],
-                    'createdBy' => Auth::user()?->name ?? 'System',
-                ]);
-                Log::info('Customer baru berhasil disimpan', ['customer' => $customer]);
+            // Gunakan customer_id jika dikirim dari frontend (customer terdaftar)
+            if (isset($payload['customer_id']) && !empty($payload['customer_id'])) {
+                $customer = customers::findOrFail($payload['customer_id']);
+                Log::info('Customer terdaftar dipakai', ['customer' => $customer]);
             } else {
-                Log::info('Customer lama ditemukan', ['customer' => $customer]);
+                // Fallback: cari berdasarkan nama + telepon, jika tidak ada buat baru
+                $customer = customers::where('nama', $payload['customer']['nama'])
+                    ->where('telepon', $payload['customer']['telepon'])
+                    ->first();
+
+                if (!$customer) {
+                    $customer = customers::create([
+                        'nama' => $payload['customer']['nama'],
+                        'telepon' => $payload['customer']['telepon'],
+                        'email' => $payload['customer']['email'] ?? null,
+                        'jenis_pelanggan' => $payload['customer']['jenis_pelanggan'] ?? null,
+                        'alamat' => $payload['customer']['alamat'],
+                        'createdBy' => Auth::user()?->name ?? 'System',
+                    ]);
+                    Log::info('Customer baru berhasil disimpan', ['customer' => $customer]);
+                } else {
+                    Log::info('Customer lama ditemukan', ['customer' => $customer]);
+                }
             }
+
+            // Helper sanitize untuk nilai rupiah/string menjadi angka
+            $toNumber = function ($val) {
+                if (is_null($val)) return 0;
+                if (is_numeric($val)) return (float) $val;
+                $digits = preg_replace('/[^0-9]/', '', (string) $val);
+                return (float) ($digits === '' ? 0 : $digits);
+            };
 
             $fakturKode = $this->generateFakturNumber();
             $transaction = transactions::create([
                 'customer_id' => $customer->id,
-                'subtotal' => $payload['summary']['subtotal'],
-                'total' => $payload['summary']['total'],
-                'biaya_desain' => $payload['summary']['biaya_desain'],
-                'diskon' => $payload['summary']['diskon'],
-                'dp' => (float) str_replace(',', '', $payload['summary']['dp']),
-                'metode_pembayaran' => $payload['summary']['metode_pembayaran'],
-                'bukti_pembayaran' => $payload['summary']['bukti_pembayaran'],
-                'status_pembayaran' => $payload['summary']['status_pembayaran'],
-                'tanggal_ambil' => $payload['summary']['tanggal_ambil'],
+                'subtotal' => $toNumber($payload['summary']['subtotal'] ?? 0),
+                'total' => $toNumber($payload['summary']['total'] ?? 0),
+                'biaya_desain' => $toNumber($payload['summary']['biaya_desain'] ?? 0),
+                'diskon' => $toNumber($payload['summary']['diskon'] ?? 0),
+                'dp' => $toNumber($payload['summary']['dp'] ?? 0),
+                'metode_pembayaran' => $payload['summary']['metode_pembayaran'] ?? null,
+                'bukti_pembayaran' => $payload['summary']['bukti_pembayaran'] ?? null,
+                'status_pembayaran' => $payload['summary']['status_pembayaran'] ?? null,
+                'tanggal_ambil' => $payload['summary']['tanggal_ambil'] ?? null,
                 'tanggal_transaksi' => now(),
                 'nomor_faktur' => $fakturKode,
                 'createdBy' => Auth::user()?->name ?? 'System',
@@ -232,11 +249,15 @@ class TransactionsController extends Controller
 
                     $totalHarga = 0;
                     if ($panjang > 0 && $lebar > 0) {
-                        $totalHarga = ($panjang * $lebar * $harga) - $diskonBarang;
+                        // Diskon barang diasumsikan per meter: kurangi harga satuan terlebih dahulu
+                        $hargaNet = max($harga - $diskonBarang, 0);
+                        $totalHarga = ($panjang * $lebar * $hargaNet);
                     } elseif ($qty > 0) {
-                        $totalHarga = ($qty * $harga) - $diskonBarang;
+                        // Untuk qty-based, diskon dianggap per item (jika ada)
+                        $hargaNet = max($harga - $diskonBarang, 0);
+                        $totalHarga = ($qty * $hargaNet);
                     } else {
-                        $totalHarga = $harga - $diskonBarang;
+                        $totalHarga = max($harga - $diskonBarang, 0);
                     }
 
                     if ($totalHarga < 0) $totalHarga = 0;
@@ -322,31 +343,46 @@ class TransactionsController extends Controller
     $logoPath2 = public_path('assets/logoSVG.svg');
     $watermarkPath = public_path('assets/lunas2.png');
 
+    $logoData = $this->imageToDataUri(File::exists($logoPath2) ? $logoPath2 : $logoPath);
+    $watermarkData = $this->imageToDataUri($watermarkPath);
+
     // === 1. Generate PDF versi pertama (nota_file) ===
     $pdfContent1 = view('Transaksi.v_notav1', [
         'transaction' => $transaction,
         'logoPath' => $logoPath2,
+        'logoData' => $logoData,
         'watermarkPath' => $watermarkPath,
+        'watermarkData' => $watermarkData,
+        'thermalWidth' => (float) config('print.thermal_width_mm', 72),
     ])->render();
 
     $fileName1 = 'nota_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
-    $pdf1 = Pdf::loadHTML($pdfContent1)
-        ->setPaper([0, 0, 164.41, 1000], 'portrait')
-        ->output();
-    file_put_contents(public_path('nota/' . $fileName1), $pdf1);
+    // Hitung ukuran kertas thermal berdasarkan config
+    $widthMm = (float) config('print.thermal_width_mm', 58);
+    $widthPt = $widthMm * 2.83465; // 1mm = 2.83465pt
+    $itemsCount = max(1, $transaction->items->count());
+    $baseHeightPt = 400; // baseline header+footer
+    $perItemPt = 90;     // tinggi per item rata-rata
+    $heightPt = $baseHeightPt + ($itemsCount * $perItemPt);
+    $pdf1 = $this->renderPdfSafe($pdfContent1, [0, 0, $widthPt, $heightPt], 'portrait');
+    $notaDir = public_path('nota');
+    if (!File::exists($notaDir)) {
+        File::makeDirectory($notaDir, 0755, true);
+    }
+    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName1, $pdf1);
 
     // === 2. Generate PDF versi kedua (nota_file_dua) ===
     $pdfContent2 = view('Transaksi.v_nota', [
         'transaction' => $transaction,
         'logoPath' => $logoPath2,
+        'logoData' => $logoData,
         'watermarkPath' => $watermarkPath,
+        'watermarkData' => $watermarkData,
     ])->render();
 
     $fileName2 = 'nota_dua_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
-    $pdf2 = Pdf::loadHTML($pdfContent2)
-        ->setPaper('a4', 'landscape')
-        ->output();
-    file_put_contents(public_path('nota/' . $fileName2), $pdf2);
+    $pdf2 = $this->renderPdfSafe($pdfContent2, 'a4', 'landscape');
+    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName2, $pdf2);
 
     // === 3. Update ke tabel transactions ===
     $transaction->update([
@@ -376,6 +412,175 @@ class TransactionsController extends Controller
 
     return $fileName1; // bisa juga return array jika perlu
 }
+
+    private function imageToDataUri(?string $path, ?string $mime = null): ?string
+    {
+        try {
+            if (!$path || !File::exists($path)) return null;
+            $data = File::get($path);
+            if (!$mime) {
+                $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                $mime = match ($ext) {
+                    'svg' => 'image/svg+xml',
+                    'png' => 'image/png',
+                    'jpg', 'jpeg' => 'image/jpeg',
+                    default => 'application/octet-stream',
+                };
+            }
+            return 'data:' . $mime . ';base64,' . base64_encode($data);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal konversi gambar ke data URI', ['path' => $path, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    private function renderPdfSafe(string $html, $paper = 'a4', string $orientation = 'portrait')
+    {
+        try {
+            return Pdf::loadHTML($html)
+                ->setPaper($paper, $orientation)
+                ->output();
+        } catch (\Throwable $e) {
+            // Fallback tanpa dependency container dompdf.wrapper
+            Log::warning('PDF facade gagal, fallback ke Dompdf langsung', ['error' => $e->getMessage()]);
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+            $options->setChroot(public_path());
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            // Handle custom paper array vs string
+            if (is_array($paper)) {
+                $dompdf->setPaper($paper, $orientation);
+            } else {
+                $dompdf->setPaper($paper, $orientation);
+            }
+            $dompdf->render();
+            return $dompdf->output();
+        }
+    }
+
+    // Cek koneksi ke printer thermal (Windows)
+    public function testThermal()
+    {
+        $printerName = config('print.thermal_printer_name', env('THERMAL_PRINTER', ''));
+        if (!$printerName) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nama printer belum diset. Isi env THERMAL_PRINTER atau config(print.thermal_printer_name).'
+            ], 422);
+        }
+
+        try {
+            $connector = new WindowsPrintConnector($printerName);
+            $printer = new Printer($connector);
+            // Inisialisasi tanpa mencetak
+            $printer->initialize();
+            $printer->close();
+            return response()->json([
+                'success' => true,
+                'message' => 'Koneksi ke printer OK.',
+                'printer' => $printerName,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal konek ke printer: ' . $e->getMessage(),
+                'printer' => $printerName,
+            ], 500);
+        }
+    }
+
+    // Cetak langsung ke printer thermal via ESC/POS (Windows)
+    public function printThermal($id)
+    {
+        $printerName = config('print.thermal_printer_name', env('THERMAL_PRINTER', 'EPSON TM-T82'));
+        if (!$printerName) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nama printer belum diset. Set env THERMAL_PRINTER atau config(print.thermal_printer_name).'
+            ], 422);
+        }
+
+        $trx = Transactions::with(['customer', 'items.produk'])->findOrFail($id);
+
+        try {
+            $connector = new WindowsPrintConnector($printerName);
+            $printer = new Printer($connector);
+
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->setEmphasis(true);
+            $printer->text("GADING PRINT\n");
+            $printer->setEmphasis(false);
+            $printer->text("Digital Print Solution\n");
+            $printer->text("Jl. Raya Sendangmulyo No.5, Meteseh, Tembalang\n");
+            $printer->text("Semarang, Jawa Tengah 50271\n");
+            $printer->feed();
+
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            $printer->text('Tanggal: ' . now()->format('d/m/Y H:i') . "\n");
+            $printer->text('Nomor  : ' . ($trx->nomor_faktur ?? '-') . "\n");
+            $printer->text('Cust.  : ' . ($trx->customer->nama ?? '-') . "\n");
+            $printer->text(str_repeat('-', 32) . "\n");
+
+            foreach ($trx->items as $it) {
+                $name = $it->produk->nama_produk ?? ('Produk #' . $it->tipe_produk_id);
+                $qtyStr = $it->qty ? (' x ' . $it->qty) : '';
+                $line1 = $name . $qtyStr . "\n";
+                $printer->text($line1);
+
+                $detail = '';
+                if ($it->panjang && $it->lebar) {
+                    $detail = number_format($it->panjang, 2) . ' x ' . number_format($it->lebar, 2);
+                }
+                $harga = number_format($it->harga_per_meter, 0, ',', '.');
+                $total = number_format($it->total_harga, 0, ',', '.');
+                $printer->text(sprintf("@%s %s\n", $harga, $detail));
+                $printer->text(str_pad('Rp ' . $total, 32, ' ', STR_PAD_LEFT) . "\n");
+                $printer->text(str_repeat('-', 32) . "\n");
+            }
+
+            // Hitung ulang subtotal dari item untuk memastikan diskon terakomodasi benar
+            $subtotalCalc = 0;
+            foreach ($trx->items as $it) {
+                $subtotalCalc += (float) ($it->total_harga ?? 0);
+            }
+
+            $diskon = (float) ($trx->diskon ?? 0);
+            $biayaDesain = (float) ($trx->biaya_desain ?? 0);
+            $dp = (float) ($trx->dp ?? 0);
+            $grandTotal = max(0, $subtotalCalc + $biayaDesain - $diskon);
+            $sisa = max(0, $grandTotal - $dp);
+
+            $printer->text('Subtotal: Rp ' . number_format($subtotalCalc, 0, ',', '.') . "\n");
+            if ($diskon > 0) {
+                $printer->text('Diskon  : Rp ' . number_format($diskon, 0, ',', '.') . "\n");
+            }
+            if ($biayaDesain > 0) {
+                $printer->text('Desain  : Rp ' . number_format($biayaDesain, 0, ',', '.') . "\n");
+            }
+            if ($dp > 0) {
+                $printer->text('DP      : Rp ' . number_format($dp, 0, ',', '.') . "\n");
+            }
+            $printer->text('Total   : Rp ' . number_format($grandTotal, 0, ',', '.') . "\n");
+            if ($dp > 0) {
+                $printer->text('Sisa    : Rp ' . number_format($sisa, 0, ',', '.') . "\n");
+            }
+            $printer->feed(2);
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->text("Terima Kasih\n");
+            $printer->text("Komplain max. 24 jam\n");
+            $printer->feed(3);
+            $printer->cut();
+            $printer->close();
+
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal cetak ke printer: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 

@@ -37,7 +37,7 @@ class PagesController extends Controller
         ->limit(12)
         ->get();
         $pesanbaru = transactions::with(['customer', 'items.produk'])
-            ->orderBy('id', 'asc')
+            ->orderBy('id', 'desc')
             ->paginate(5);
 
         // Return semua data, tidak ada yang dihapus
@@ -68,7 +68,8 @@ class PagesController extends Controller
     public function transaksi()
     {
         $showProdak = Produk::with('hargas')->get('*');
-        return view('Transaksi.v_transaksi',compact('showProdak'));
+        $customers = customers::orderBy('nama', 'asc')->get();
+        return view('Transaksi.v_transaksi', compact('showProdak', 'customers'));
     }
 
     public function cetakNota($id)
@@ -83,14 +84,14 @@ class PagesController extends Controller
     public function transaksiTaabel()
     {
         $transaction = transactions::with(['customer', 'items.produk'])
-                    ->orderBy('id', 'asc')  // Tambahkan ini untuk order by id asc
+                    ->orderBy('id', 'desc')
                     ->get();
         return view('Transaksi.v_tabelTransaksi', compact('transaction'));
     }
     public function transaksiReport()
     {
         $transaction = transactions::with(['customer', 'items.produk'])
-                    ->orderBy('id', 'asc')  // Tambahkan ini untuk order by id asc
+                    ->orderBy('id', 'desc')
                     ->get();
         return view('report.v_report', compact('transaction'));
     }

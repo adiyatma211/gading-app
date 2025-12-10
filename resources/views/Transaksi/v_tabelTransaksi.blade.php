@@ -382,14 +382,17 @@
             const total = parseFloat($('#total').val()) || 0;
             const statusPembayaran = $('#status_pembayaran').val();
 
-            // Ambil file dari input
+            // Ambil file dari input (aman bila elemen belum ada)
             const fileInput = document.getElementById('bukti_pengambilan');
-            const file = fileInput.files[0];
+            let file = null;
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                file = fileInput.files[0];
+            }
 
-            // Validasi sederhana
+            // Validasi sederhana (file bukti opsional)
             if (statusTransaksi === 'diambil') {
-                if (!tanggalDiambil || !diambilOleh || !file) {
-                    Swal.fire('Error', 'Harap lengkapi semua data untuk status "Diambil"', 'error');
+                if (!tanggalDiambil || !diambilOleh) {
+                    Swal.fire('Error', 'Harap lengkapi tanggal diambil dan diambil oleh untuk status "Diambil"', 'error');
                     return;
                 }
             }
@@ -403,7 +406,9 @@
             if (statusTransaksi === 'diambil') {
                 payload.append('tanggal_ambil', tanggalDiambil);
                 payload.append('diambil_oleh', diambilOleh);
-                payload.append('bukti_pengambilan', file);
+                if (file) {
+                    payload.append('bukti_pengambilan', file);
+                }
             }
 
             // Tambahkan kekurangan jika status_pembayaran == 'dp'
@@ -465,27 +470,30 @@
             const previewContainer = document.getElementById('preview-container');
             const imagePreview = document.getElementById('image-preview');
 
-            // Tangani event saat file dipilih
-            buktiPengambilanInput.addEventListener('change', function(event) {
-                const file = event.target.files[0]; // Ambil file yang dipilih
+            // Pasang listener hanya jika elemen tersedia
+            if (buktiPengambilanInput && previewContainer && imagePreview) {
+                // Tangani event saat file dipilih
+                buktiPengambilanInput.addEventListener('change', function(event) {
+                    const file = event.target && event.target.files ? event.target.files[0] : null; // Ambil file yang dipilih
 
-                if (file) {
-                    // Tampilkan container pratinjau
-                    previewContainer.style.display = 'block';
+                    if (file) {
+                        // Tampilkan container pratinjau
+                        previewContainer.style.display = 'block';
 
-                    // Baca file menggunakan FileReader
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        // Set src gambar pratinjau ke hasil pembacaan file
-                        imagePreview.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file); // Baca file sebagai URL data
-                } else {
-                    // Sembunyikan container jika tidak ada file yang dipilih
-                    previewContainer.style.display = 'none';
-                    imagePreview.src = '#';
-                }
-            });
+                        // Baca file menggunakan FileReader
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            // Set src gambar pratinjau ke hasil pembacaan file
+                            imagePreview.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file); // Baca file sebagai URL data
+                    } else {
+                        // Sembunyikan container jika tidak ada file yang dipilih
+                        previewContainer.style.display = 'none';
+                        imagePreview.src = '#';
+                    }
+                });
+            }
         });
     </script>
 @endsection

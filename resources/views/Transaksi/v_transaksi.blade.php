@@ -121,6 +121,36 @@
             </div>
             <div class="card-body">
                 <form id="formNasabah">@csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label d-block">Sumber Data Customer</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="mode_customer" id="modeBaru" value="baru" checked>
+                                <label class="form-check-label" for="modeBaru">Pelanggan Baru</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="mode_customer" id="modeTerdaftar" value="terdaftar">
+                                <label class="form-check-label" for="modeTerdaftar">Pelanggan Terdaftar</label>
+                            </div>
+                        </div>
+                        <div class="col-md-12" id="customerTerdaftarContainer" style="display:none;">
+                            <label class="form-label">Pilih Customer</label>
+                            <select class="form-select" id="select_customer">
+                                <option value="">-- Pilih Customer --</option>
+                                @foreach($customers as $c)
+                                    <option value="{{ $c->id }}"
+                                        data-nama="{{ $c->nama }}"
+                                        data-telepon="{{ $c->telepon }}"
+                                        data-email="{{ $c->email }}"
+                                        data-jenis="{{ $c->jenis_pelanggan }}"
+                                        data-alamat="{{ $c->alamat }}">
+                                        {{ $c->nama }} - {{ $c->telepon }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Jika tidak ada di daftar, pilih Pelanggan Baru.</small>
+                        </div>
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label">Nama Lengkap</label>
@@ -134,13 +164,7 @@
                             <label class="form-label">Email (Opsional)</label>
                             <input type="email" class="form-control" name="email" id="email">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Jenis Pelanggan</label>
-                            <select class="form-select" name="jenis_pelanggan" id="jenis_pelanggan">
-                                <option value="baru">Pelanggan Baru</option>
-                                <option value="lama">Pelanggan Lama</option>
-                            </select>
-                        </div>
+                        
                         <div class="col-12">
                             <label class="form-label">Alamat</label>
                             <textarea class="form-control" name="alamat" id="alamat" rows="3" required></textarea>
@@ -217,6 +241,7 @@
 
                 <form id="formTransaksi">
                     @csrf
+                    <input type="hidden" name="selected_customer_id" id="selected_customer_id">
                     <input type="hidden" name="nama_nasabah" id="hidden_nama">
                     <input type="hidden" name="telepon_nasabah" id="hidden_telepon">
                     <input type="hidden" name="email_nasabah" id="hidden_email">
@@ -299,10 +324,9 @@
                             <input type="text" name="biaya_desain" id="biaya_desain"
                                 class="form-control rupiah-input" value="0">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 d-none">
                             <label class="form-label">Diskon (Rp)</label>
-                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input"
-                                value="0">
+                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input" value="0">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Tanggal Ambil / Selesai</label>
@@ -439,8 +463,16 @@
                             accept="image/*">
                         <small class="text-muted">Unggah bukti pembayaran (format gambar).</small>
                     </div>
+                    <div class="col-md-4" id="dpOverrideContainer" style="display: none;">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="dp_override">
+                            <label class="form-check-label" for="dp_override">Prioritas (Bebas DP)</label>
+                        </div>
+                        <small class="text-muted">Jika aktif, batas minimal 50% dinonaktifkan.</small>
+                    </div>
                     <div class="col-md-4" id="dpContainer" style="display: none;">
-                        <label class="form-label">Down Payment (DP) 50%</label>
+                        <label class="form-label">Down Payment (DP)</label>
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
                             <input type="text" class="form-control" name="dp" id="dp"
@@ -454,6 +486,15 @@
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-outline-secondary" id="btnBackToTransaksi">
                         <i class="bi bi-arrow-left"></i> Kembali
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" id="btnShowNota" style="display:none;">
+                        <i class="bi bi-printer"></i> Tampilkan Nota
+                    </button>
+                    <button type="button" class="btn btn-outline-dark" id="btnPrintThermal" style="display:none;">
+                        <i class="bi bi-printer"></i> Cetak Thermal
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnTestThermal">
+                        <i class="bi bi-activity"></i> Tes Koneksi Printer
                     </button>
                     <button type="button" class="btn btn-success flex-grow-1" id="btnSelesaiTransaksi">
                         <i class="bi bi-check2-circle"></i> Selesai & Simpan
@@ -505,6 +546,20 @@
             }
 
             return prefix + rupiah;
+        }
+
+        // Sanitize desimal: pakai titik, bukan koma
+        function sanitizeDecimalString(str) {
+            if (str == null) return '';
+            let s = String(str).replace(/,/g, '.'); // ganti koma -> titik
+            // sisakan digit dan titik
+            s = s.replace(/[^0-9.]/g, '');
+            // hanya satu titik diperbolehkan
+            const parts = s.split('.');
+            if (parts.length > 2) {
+                s = parts[0] + '.' + parts.slice(1).join('');
+            }
+            return s;
         }
 
         // Global variables
@@ -561,6 +616,12 @@
 
                 calculateTotal();
             });
+
+            // Khusus panjang/lebar: paksa titik sebagai desimal
+            row.on('input', '.panjang-input, .lebar-input', function() {
+                const cleaned = sanitizeDecimalString(this.value);
+                if (this.value !== cleaned) this.value = cleaned;
+            });
         }
 
 
@@ -579,11 +640,11 @@
                     dynamicHTML = `
                     <div class="col-md-2 dynamic-inputs panjang-lebar">
                         <label class="form-label">Panjang (m)</label>
-                        <input type="number" step="0.1" class="form-control panjang-input" name="items[${currentIndex}][panjang]" placeholder="0.0">
+                        <input type="number" step="0.1" inputmode="decimal" lang="en" class="form-control panjang-input" name="items[${currentIndex}][panjang]" placeholder="0.0">
                     </div>
                     <div class="col-md-2 dynamic-inputs panjang-lebar">
                         <label class="form-label">Lebar (m)</label>
-                        <input type="number" step="0.1" class="form-control lebar-input" name="items[${currentIndex}][lebar]" placeholder="0.0">
+                        <input type="number" step="0.1" inputmode="decimal" lang="en" class="form-control lebar-input" name="items[${currentIndex}][lebar]" placeholder="0.0">
                     </div>`;
                 } else if (tipeProduk === 'tiered' || tipeProduk === 'flat') {
                     dynamicHTML = `
@@ -602,13 +663,6 @@
                         <select class="form-select" name="items[${currentIndex}][sisi]">
                             <option value="1">1 Sisi</option>
                             <option value="2">2 Sisi</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 dynamic-inputs laminasi">
-                        <label class="form-label">Laminasi</label>
-                        <select class="form-select" name="items[${currentIndex}][laminasi]">
-                            <option value="tidak">Tidak</option>
-                            <option value="ya">Ya</option>
                         </select>
                     </div>`;
                 }
@@ -662,7 +716,9 @@
                         diskonbarang);
 
                     if (panjang > 0 && lebar > 0) {
-                        itemTotal = panjang * lebar * harga - diskonbarang;
+                        // Diskon dianggap per meter -> turunkan harga satuan terlebih dulu
+                        const hargaNet = Math.max(harga - diskonbarang, 0);
+                        itemTotal = panjang * lebar * hargaNet;
                     } else {
                         console.warn('⚠️ Invalid dimensions for per_meter');
                     }
@@ -681,7 +737,7 @@
                 } else if (tipeProduk === 'custom') {
                     const qty = parseInt(row.find('input[name$="[qty]"]').val()) || 0;
                     const sisi = row.find('select[name$="[sisi]"]').val();
-                    const laminasi = row.find('select[name$="[laminasi]"]').val();
+                    const laminasi = row.find('select[name$="[laminasi]"]').val() || 'tidak';
 
                     const harga = getCustomHarga(produkId, sisi, laminasi);
                     itemTotal = qty * harga;
@@ -822,6 +878,55 @@
             attachDropdownChangeHandler();
         });
 
+        // Quick-access nota button after save
+        $(document).on('click', '#btnShowNota', function() {
+            if (!savedNotaFile) return;
+            const url = '/nota/' + savedNotaFile;
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+            iframe.onload = function() {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            };
+        });
+
+        // Cetak langsung ke thermal printer (ESC/POS via server)
+        $(document).on('click', '#btnPrintThermal', function() {
+            if (!savedTransactionId) return;
+            $.ajax({
+                url: "{{ url('/transaksi/print-thermal') }}/" + savedTransactionId,
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function() {
+                    Swal.fire({ icon: 'success', title: 'Terkirim ke Printer', timer: 1200, showConfirmButton: false });
+                },
+                error: function(xhr) {
+                    let message = 'Gagal mengirim ke printer thermal.';
+                    try { const json = JSON.parse(xhr.responseText); message = json.message || message; } catch(e){}
+                    Swal.fire({ icon: 'error', title: 'Gagal Cetak', text: message });
+                }
+            });
+        });
+
+        // Tes koneksi printer thermal
+        $(document).on('click', '#btnTestThermal', function() {
+            $.ajax({
+                url: "{{ route('transaksi.printThermal.test') }}",
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                success: function(res) {
+                    Swal.fire({ icon: 'success', title: 'Printer Terdeteksi', text: res.printer || 'OK', timer: 1500, showConfirmButton: false });
+                },
+                error: function(xhr) {
+                    let message = 'Tidak dapat terhubung ke printer thermal.';
+                    try { const json = JSON.parse(xhr.responseText); message = json.message || message; } catch(e){}
+                    Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: message });
+                }
+            });
+        });
+
         // Remove item
         $(document).on('click', '.btn-remove-item', function() {
             $(this).closest('.mmt-item').fadeOut(200, function() {
@@ -855,14 +960,71 @@
 
         // Form Submissions and Navigation
 
+        // Toggle customer mode
+        $(document).on('change', 'input[name="mode_customer"]', function() {
+            const mode = $(this).val();
+            if (mode === 'terdaftar') {
+                $('#customerTerdaftarContainer').slideDown(150);
+                // disable manual fields
+                $('#nama, #telepon, #email, #alamat').prop('disabled', true);
+            } else {
+                $('#customerTerdaftarContainer').slideUp(150);
+                $('#select_customer').val('');
+                $('#selected_customer_id').val('');
+                // enable manual fields
+                $('#nama, #telepon, #email, #alamat').prop('disabled', false);
+            }
+        });
+
+        // Prefill manual fields when choosing existing customer (for preview/editing if needed)
+        $(document).on('change', '#select_customer', function() {
+            const opt = $(this).find('option:selected');
+            const cid = opt.val();
+            if (!cid) { return; }
+            const nama = opt.data('nama') || '';
+            const telepon = opt.data('telepon') || '';
+            const email = opt.data('email') || '-';
+            const jenis = opt.data('jenis') || '';
+            const alamat = opt.data('alamat') || '';
+
+            $('#selected_customer_id').val(cid);
+            // Keep manual fields disabled in terdaftar mode; we only mirror to summary later
+            $('#summary-nama').text(nama);
+            $('#summary-telepon').text(telepon);
+            $('#summary-email').text(email);
+            $('#summary-jenis').text(jenis);
+            $('#summary-alamat').text(alamat);
+        });
+
         // Submit Form Nasabah
         $('#formNasabah').submit(function(e) {
             e.preventDefault();
-            const nama = $('#nama').val();
-            const telepon = $('#telepon').val();
-            const email = $('#email').val() || '-';
-            const jenisPelanggan = $('#jenis_pelanggan').val();
-            const alamat = $('#alamat').val();
+            const mode = $('input[name="mode_customer"]:checked').val();
+            let nama, telepon, email, jenisPelanggan, jenisLabel, alamat, selectedId = '';
+
+            if (mode === 'terdaftar') {
+                const opt = $('#select_customer option:selected');
+                selectedId = opt.val();
+                if (!selectedId) {
+                    Swal.fire({ icon: 'warning', title: 'Pilih Customer', text: 'Silakan pilih customer terdaftar.' });
+                    return;
+                }
+                nama = opt.data('nama') || '';
+                telepon = opt.data('telepon') || '';
+                email = opt.data('email') || '-';
+                jenisPelanggan = opt.data('jenis') || '';
+                jenisLabel = jenisPelanggan ? jenisPelanggan : 'Pelanggan Terdaftar';
+                alamat = opt.data('alamat') || '';
+                $('#selected_customer_id').val(selectedId);
+            } else {
+                nama = $('#nama').val();
+                telepon = $('#telepon').val();
+                email = $('#email').val() || '-';
+                jenisPelanggan = '';
+                jenisLabel = 'Pelanggan Baru';
+                alamat = $('#alamat').val();
+                $('#selected_customer_id').val('');
+            }
 
             if (!nama || !telepon || !alamat) {
                 Swal.fire({
@@ -878,7 +1040,7 @@
             $('#summary-nama').text(nama);
             $('#summary-telepon').text(telepon);
             $('#summary-email').text(email);
-            $('#summary-jenis').text($('#jenis_pelanggan option:selected').text());
+            $('#summary-jenis').text(jenisLabel || '-');
             $('#summary-alamat').text(alamat);
 
             $('#hidden_nama').val(nama);
@@ -982,6 +1144,9 @@
                 $('#step3-indicator').removeClass('active');
                 $('#step2-indicator').addClass('active');
                 $('#progressBar').css('width', '66.66%');
+                if (transactionSaved) {
+                    setReadOnlyMode(true);
+                }
             });
         });
 
@@ -1006,7 +1171,28 @@
         }
 
         // Submit Final Transaction
+        let isSubmitting = false;
+        let transactionSaved = false;
+        let savedNotaFile = null;
+        let savedTransactionId = null;
+
+        function setReadOnlyMode(flag) {
+            const disabled = !!flag;
+            $('#nasabahForm :input, #transaksiForm :input, #pembayaranForm :input').prop('disabled', disabled);
+            // Keep nav/nota buttons usable
+            $('#btnBackToNasabah, #btnEditNasabah, #btnBackToTransaksi, #btnShowNota').prop('disabled', false);
+            if (disabled) {
+                $('#btnAddItem').hide();
+                $('.btn-remove-item').hide();
+            }
+        }
         $('#btnSelesaiTransaksi').click(function() {
+            if (isSubmitting) return;
+            isSubmitting = true;
+            const $btnSave = $('#btnSelesaiTransaksi');
+            const originalHtml = $btnSave.html();
+            $btnSave.data('original-html', originalHtml);
+            $btnSave.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
             calculateTotal();
 
             const payload = {
@@ -1017,18 +1203,20 @@
                     alamat: $('#hidden_alamat').val(),
                     jenis_pelanggan: $('#hidden_jenis_pelanggan').val()
                 },
+                customer_id: $('#selected_customer_id').val() || null,
                 items: [],
-                summary: {
-                    biaya_desain: $('#biaya_desain').val(),
-                    diskon: $('#diskon').val(),
-                    tanggal_ambil: $('#tanggal_ambil').val(),
-                    metode_pembayaran: $('#metode_pembayaran').val(),
-                    status_pembayaran: $('#status_pembayaran').val(),
-                    dp: $('#dp').val() || 0,
-                    subtotal: window.subtotalTerakhir || 0,
-                    total: $('#total_raw').val(),
-                    bukti_pembayaran: $('#bukti_pembayaran').val() || null
-                }
+                    summary: {
+                        biaya_desain: $('#biaya_desain').val(),
+                        diskon: $('#diskon').val(),
+                        tanggal_ambil: $('#tanggal_ambil').val(),
+                        metode_pembayaran: $('#metode_pembayaran').val(),
+                        status_pembayaran: $('#status_pembayaran').val(),
+                        dp_override: $('#dp_override').is(':checked') ? 1 : 0,
+                        dp: $('#dp').val() || 0,
+                        subtotal: window.subtotalTerakhir || 0,
+                        total: $('#total_raw').val(),
+                        bukti_pembayaran: $('#bukti_pembayaran').val() || null
+                    }
             };
 
             $('.mmt-item').each(function() {
@@ -1069,6 +1257,13 @@
                 },
                 data: JSON.stringify(payload),
                 success: function(res) {
+                    // Hide save button to avoid double action after successful save
+                    $('#btnSelesaiTransaksi').hide();
+                    transactionSaved = true;
+                    savedNotaFile = res.nota_file || null;
+                    savedTransactionId = res.transaction_id || null;
+                    $('#btnShowNota').show();
+                    isSubmitting = false;
                     Swal.fire({
                         icon: 'success',
                         title: 'Transaksi Berhasil!',
@@ -1118,6 +1313,10 @@
                         text: message,
                         confirmButtonText: 'Tutup'
                     });
+                    // Restore button so user can retry
+                    const $btnSave = $('#btnSelesaiTransaksi');
+                    $btnSave.prop('disabled', false).html($btnSave.data('original-html') || '<i class="bi bi-check2-circle"></i> Selesai & Simpan');
+                    isSubmitting = false;
                 }
             });
 
@@ -1136,7 +1335,17 @@
             $(document).on('keyup', '.rupiah-input', function() {
                 this.value = formatRupiah(this.value);
             });
+
+            // Panjang/Lebar: paksa titik sebagai desimal dan bersihkan karakter selain angka/titik
+            $(document).on('input', 'input[name$="[panjang]"], input[name$="[lebar]"]', function() {
+                const cleaned = sanitizeDecimalString(this.value);
+                if (this.value !== cleaned) this.value = cleaned;
+            });
             $('#status_pembayaran').on('change', function() {
+                updateDpField();
+                calculateTotal();
+            });
+            $(document).on('change', '#dp_override', function() {
                 updateDpField();
                 calculateTotal();
             });
@@ -1150,5 +1359,71 @@
             // Initial calculation
             setTimeout(calculateTotal, 300);
         });
+
+        // Override: DP input + optional per-transaksi prioritas (bebas DP)
+        function updateDpField() {
+            let totalAkhir = parseInt($('#total').val().replace(/[^0-9]/g, '')) || 0;
+            const dpField = $('#dpContainer');
+            const dpInput = $('#dp');
+            const dpWarning = $('#dpWarning');
+            const statusPembayaran = ($('#status_pembayaran').val() || '').toLowerCase();
+            const dpOverrideBox = $('#dpOverrideContainer');
+            const isOverride = $('#dp_override').is(':checked');
+
+            if (statusPembayaran === 'lunas') {
+                dpField.hide();
+                dpOverrideBox.hide();
+                dpInput.val('');
+                dpInput.removeAttr('required');
+                dpWarning.hide();
+                return;
+            }
+
+            // Status DP
+            dpOverrideBox.show();
+            dpField.show();
+            dpInput.attr('required', true);
+            const dpMin = (!isOverride && totalAkhir >= 300000) ? Math.round(totalAkhir * 0.5) : 0;
+            dpInput.data('min-dp', dpMin);
+            if (dpMin > 0 && !dpInput.val()) {
+                dpInput.val((dpMin).toLocaleString());
+            }
+            dpWarning.hide();
+
+            dpInput.off('input').on('input', function() {
+                const rawVal = $(this).val().replace(/[^0-9]/g, '');
+                const newDp = parseInt(rawVal) || 0;
+                const minDp = $(this).data('min-dp') || 0;
+
+                if (!rawVal) {
+                    dpWarning.text('Isi nominal DP.').show();
+                } else if (minDp > 0 && newDp < minDp) {
+                    dpWarning.text(`DP minimal Rp${minDp.toLocaleString()}`).show();
+                } else if (newDp > totalAkhir) {
+                    dpWarning.text('DP tidak boleh melebihi total.').show();
+                } else {
+                    dpWarning.hide();
+                }
+                $(this).val(formatRupiah(rawVal));
+            });
+        }
+
+        // Override: DP validation logic (respect prioritas override)
+        function isDpValid() {
+            const total = parseInt($('#total_raw').val().replace(/[^0-9]/g, '')) || 0;
+            const dp = parseInt($('#dp').val().replace(/[^0-9]/g, '')) || 0;
+            const status = ($('#status_pembayaran').val() || '').toLowerCase();
+            const dpMin = Math.round(total * 0.5);
+
+            if (status === 'lunas') return { valid: true };
+
+            const isOverride = $('#dp_override').is(':checked');
+            if (!isOverride && total >= 300000 && dp < dpMin) {
+                return { valid: false, message: `DP minimal adalah 50% dari total (Rp${dpMin.toLocaleString()}).` };
+            }
+            if (dp <= 0) return { valid: false, message: 'Nominal DP harus lebih dari 0.' };
+            if (dp > total) return { valid: false, message: 'DP tidak boleh melebihi total.' };
+            return { valid: true };
+        }
     </script>
 @endsection

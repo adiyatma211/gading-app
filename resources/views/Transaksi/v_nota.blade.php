@@ -66,7 +66,9 @@
 <body>
     @if ($transaction->status_pembayaran === 'lunas')
         <div class="watermark">
-            <img src="{{ $watermarkPath }}" width="150">
+            @if(!empty($watermarkData))
+                <img src="{{ $watermarkData }}" width="150">
+            @endif
         </div>
     @endif
 
@@ -121,8 +123,14 @@
                     <td>{{ $a->panjang }} x {{ $a->lebar }}</td>
                     <td>{{ number_format($a->harga_per_meter, 0, ',', '.') }}</td>
                     <td>1</td>
-                    <td>{{ number_format($a->harga_per_meter * $a->panjang * $a->lebar, 0, ',', '.') }}</td>
+                    <td>{{ number_format($a->total_harga ?? ($a->harga_per_meter * $a->panjang * $a->lebar), 0, ',', '.') }}</td>
                 </tr>
+                @if (($a->diskon_barang ?? 0) > 0)
+                    <tr>
+                        <td colspan="6" class="text-right">Diskon Item</td>
+                        <td>{{ number_format($a->diskon_barang, 0, ',', '.') }}</td>
+                    </tr>
+                @endif
             @endforeach
 
             <tr>
@@ -174,7 +182,9 @@
 
                 <div style="float: right; width: 35%; text-align: center;">
                     <p><b>Hormat Kami,</b></p>
-                    <img src="{{ $logoPath }}" alt="Logo" style="margin-top: 20px;" height="60">
+                    @if(!empty($logoData))
+                        <img src="{{ $logoData }}" alt="Logo" style="margin-top: 20px;" height="60">
+                    @endif
                 </div>
             </td>
             <td class="no-border" style="width: 30%; text-align: right; padding-right: 10px;">

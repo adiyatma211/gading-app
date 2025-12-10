@@ -167,23 +167,25 @@
                     hargas.forEach((h, idx) => {
                         tambahBarisHargaPerMeter(idx);
                         $(`.harga-input:eq(${idx})`).val(formatRupiah(h.harga?.toString() || '0'));
-                        $(`.diskon-input:eq(${idx})`).val(formatRupiah(h.diskon?.toString() ||
-                            '0'));
-                        calculateMMTTotal($('.harga-row:eq(0)'));
+                        $(`.diskon-input:eq(${idx})`).val(formatRupiah(h.diskon?.toString() || '0'));
+                        calculateMMTTotal($('.harga-row').eq(idx));
                     });
                     hargaIndex = hargas.length;
                 } else if (tipe === 'tiered') {
+                    // Buat 4 baris tier sekali saja, lalu isi dari hargas
+                    tambahTierPricing(0);
                     hargas.forEach((h, idx) => {
-                        tambahTierPricing(idx);
                         $(`.harga-input:eq(${idx})`).val(formatRupiah(h.harga?.toString() || '0'));
                         $(`[name="harga[${idx}][min_qty]"]`).val(h.min_qty);
                         $(`[name="harga[${idx}][max_qty]"]`).val(h.max_qty);
                     });
-                    hargaIndex += hargas.length;
+                    hargaIndex = hargas.length;
                 } else if (tipe === 'flat') {
                     hargas.forEach((h, idx) => {
                         tambahBanner(idx);
-                        $(`.harga-input:eq(${idx})`).val(formatRupiah(h.harga?.toString() || '0'));
+                        const raw = extractNumericValue((h.harga ?? '').toString());
+                        const display = (raw % 1000 === 0) ? (raw / 1000).toString() : raw.toString();
+                        $(`.harga-input:eq(${idx})`).val(formatRupiah(display));
                     });
                     hargaIndex = hargas.length;
                 } else if (tipe === 'custom') {
@@ -196,6 +198,14 @@
                         }
                     });
                     hargaIndex = hargas.length;
+                }
+
+                if ($.fn && $.fn.modal) {
+                    $('#modalProduk').modal('show');
+                } else if (window.bootstrap && bootstrap.Modal) {
+                    const el = document.getElementById('modalProduk');
+                    const modal = bootstrap.Modal.getOrCreateInstance(el);
+                    modal.show();
                 }
             }, 300);
         });
@@ -210,17 +220,48 @@
 
         let hargaIndex = 0;
 
-        // Format Rupiah
-        function formatRupiah(angka, prefix = 'Rp ') {
-            if (typeof angka !== 'string') angka = angka.toString();
-            let number_string = angka.replace(/[^,\d]/g, '');
-            const split = number_string.split(',');
-            let rupiah = split[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            return prefix + rupiah + (split[1] ? ',' + split[1].substr(0, 2) : '');
+        // Konversi string rupiah ke angka integer (ID locale-aware)
+        function extractNumericValue(input) {
+            if (!input) return 0;
+            let s = input.toString().trim();
+            // Sisakan digit, titik, koma
+            s = s.replace(/[^0-9.,-]/g, '');
+
+            if (s.includes(',')) {
+                // Format Indonesia: '.' ribuan, ',' desimal => hilangkan titik, ganti koma -> titik
+                s = s.replace(/\./g, '').replace(/,/g, '.');
+                const num = parseFloat(s);
+                return isNaN(num) ? 0 : Math.trunc(num);
+            } else {
+                const dots = (s.match(/\./g) || []).length;
+                if (dots === 0) {
+                    const num = parseFloat(s);
+                    return isNaN(num) ? 0 : Math.trunc(num);
+                } else if (dots > 1) {
+                    // Jelas pemisah ribuan
+                    const num = parseFloat(s.replace(/\./g, ''));
+                    return isNaN(num) ? 0 : Math.trunc(num);
+                } else {
+                    // Satu titik: cek panjang pecahan
+                    const parts = s.split('.');
+                    if (parts[1] && parts[1].length <= 2) {
+                        // Anggap desimal (contoh: 25000.00)
+                        const num = parseFloat(s);
+                        return isNaN(num) ? 0 : Math.trunc(num);
+                    } else {
+                        // Anggap ribuan (contoh: 25.000)
+                        const num = parseFloat(s.replace(/\./g, ''));
+                        return isNaN(num) ? 0 : Math.trunc(num);
+                    }
+                }
+            }
         }
 
-        function extractNumericValue(rupiahString) {
-            return rupiahString ? parseInt(rupiahString.replace(/[^\d]/g, '')) : 0;
+        // Format Rupiah konsisten memakai extractNumericValue
+        function formatRupiah(angka, prefix = 'Rp ') {
+            const intVal = extractNumericValue(angka ?? 0);
+            const rupiah = intVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            return prefix + rupiah;
         }
 
         function setupRupiahInputHandlers() {
@@ -461,7 +502,15 @@
         });
 
         function prepareFormData() {
-            $('.harga-input, .diskon-input').each(function() {
+            const tipe = $('#tipe_produk').val();
+            $('.harga-input').each(function() {
+                let rawValue = extractNumericValue($(this).val());
+                if (tipe === 'flat') {
+                    rawValue = rawValue * 1000; // Banner disimpan dalam rupiah penuh
+                }
+                $(this).val(rawValue);
+            });
+            $('.diskon-input').each(function() {
                 const rawValue = extractNumericValue($(this).val());
                 $(this).val(rawValue);
             });

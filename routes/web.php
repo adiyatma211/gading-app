@@ -93,6 +93,8 @@ Route::middleware(['auth', 'check.role:kasir,Owner,superadmin,SuperAdmin,Super A
     Route::get('/transaksi/detail/{id}', [TransactionsController::class, 'detailTransaksi'])->name('transaksi.detail');
     Route::post('/transaksi/store', [TransactionsController::class, 'store'])->name('transaksi.store');
     Route::post('/transaksi/updateTransaksi', [TransactionsController::class, 'updateTransaksi'])->name('transaksi.updateTransaksi');
+    Route::post('/transaksi/print-thermal/{id}', [TransactionsController::class, 'printThermal'])->name('transaksi.printThermal');
+    Route::post('/transaksi/print-thermal-test', [TransactionsController::class, 'testThermal'])->name('transaksi.printThermal.test');
 });
 
 
