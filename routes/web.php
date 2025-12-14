@@ -16,7 +16,7 @@ Route::get('/', function () {
 Route::post('/logout', function (Request $request) {
     $request->session()->regenerateToken(); // Regenerasi token CSRF
     $request->session()->invalidate();      // Hapus semua session
-    auth()->logout();                       // Logout user
+    Auth::logout();                       // Logout user
 
     return redirect('/login')->withHeaders([
         'Cache-Control' => 'no-cache, no-store, must-revalidate',
@@ -32,6 +32,37 @@ Route::get('/nota/{filename}', function ($filename) {
     }
 
     return response()->file($path);
+});
+
+// Route untuk mengakses PDF dari storage (hanya untuk user yang terautentikasi)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/pdf-storage/{path}', function ($path) {
+        // Decode path yang di-encode
+        $path = urldecode($path);
+
+        // Remove trailing slash if present
+        $path = rtrim($path, '/');
+
+        // Security check - hanya izinkan path dengan format tertentu
+        if (!preg_match('/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/(thermal|invoice|THERMAL|INVOICE)\/[^\/]+\.pdf$/', $path)) {
+            abort(403, 'Access denied.');
+        }
+
+        $storageService = app(\App\Services\PDFStorageService::class);
+
+        if (!$storageService->fileExists($path)) {
+            abort(404, 'PDF file not found.');
+        }
+
+        $fileContent = $storageService->getPDF($path);
+        if (!$fileContent) {
+            abort(404, 'PDF file not found or cannot be read.');
+        }
+
+        return response($fileContent)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . basename($path) . '"');
+    })->where('path', '.*');
 });
 
 Route::middleware(['auth', 'check.role:SuperAdmin,Owner,Super Admin,kasir'])->group(function () {
@@ -58,29 +89,18 @@ Route::delete('/produk/{id}', [ProdukNewController::class, 'destroy'])->name('pr
 Route::put('/harga-produk/{id}', [ProdukNewController::class, 'updateHarga'])->name('harga.update');
 Route::delete('/harga-produk/{id}', [ProdukNewController::class, 'destroyHarga'])->name('harga.delete');
     Route::get('/produk', [PagesController::class, 'produk'])->name('produk');
-    // Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
-    // Route::post('/produk/store', [ProdukController::class, 'store'])->name('produk.store');
-    // Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
-    // Route::post('/produk/{id}/update', [ProdukController::class, 'update'])->name('produk.update');
-    // Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
     Route::post('/bahan/{bahanId}/update', [ProdukController::class, 'updateBahan']);
     Route::delete('/bahan/{id}', [ProdukController::class, 'hapusBahan']);
-
     Route::get('/roles', [PagesController::class, 'roles'])->name('roles');
     Route::post('/roles/store', [RolesController::class, 'store'])->name('roles.store');
     Route::put('/roles/{id}', [RolesController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
-
     Route::get('/aksesRole/user', [HakAksesRoleController::class, 'searchUserName'])->name('user.search.name');
     Route::post('/aksesRole/store-user', [HakAksesRoleController::class, 'storeUser'])->name('user.insert');
     Route::post('/aksesRole/store', [HakAksesRoleController::class, 'updateUserRole'])->name('user.update');
     Route::post('/aksesRole/update-role/{id}', [HakAksesRoleController::class, 'updateUserRole'])->name('user.update-role');
     Route::delete('/aksesRole/delete-user/{id}', [HakAksesRoleController::class, 'deleteUser'])->name('user.delete');
-
-
     // Report
-
-
     Route::get('/report', [PagesController::class, 'transaksiReport'])->name('report');
     Route::post('/laporan/transaksi/data', [PagesController::class, 'getDataTransaksi'])->name('laporan.transaksi.data');
     Route::get('/export-transaksi', [PagesController::class, 'exportExcel'])->name('export.transaksi');
@@ -97,47 +117,6 @@ Route::middleware(['auth', 'check.role:kasir,Owner,superadmin,SuperAdmin,Super A
     Route::post('/transaksi/print-thermal-test', [TransactionsController::class, 'testThermal'])->name('transaksi.printThermal.test');
 });
 
-
-// Route::get('/dashboard',[PagesController::class,'dash'])->name('dash');
-// Route::get('/transaksiTaabel',[PagesController::class,'transaksiTaabel'])->name('transaki.tabel');
-// Route::get('/aksesRole',[PagesController::class,'aksesRole'])->name('aksesRole');
-
-
-// Route::get('/transaksi',[PagesController::class,'transaksi'])->name('transaksi');
-// Route::get('/transaksi/cetak/{id}', [PagesController::class, 'cetakNota'])->name('transaksi.cetak');
-// Route::get('/transaksi/detail/{id}',[TransactionsController::class,'detailTransaksi'])->name('transaksi.detail');
-// // Route::get('/transaksi/nota',[PagesController::class,'cetakNota'])->name('transaksi.nota');
-// Route::post('/transaksi/store',[TransactionsController::class,'store'])->name('transaksi.store');
-// Route::post('/transaksi/updateTransaksi',[TransactionsController::class,'updateTransaksi'])->name('transaksi.updateTransaksi');
-
-
-
-
-
-// Route::get('/produk',[PagesController::class,'produk'])->name('produk');
-// Route::get('/produk/create', [ProdukController::class, 'create'])->name('produk.create');
-// Route::post('/produk/store', [ProdukController::class, 'store'])->name('produk.store');
-// Route::get('/produk/{id}/edit', [ProdukController::class, 'edit'])->name('produk.edit');
-// Route::post('/produk/{id}/update', [ProdukController::class, 'update'])->name('produk.update');
-// Route::delete('/produk/{id}', [ProdukController::class, 'destroy'])->name('produk.destroy');
-// Route::post('/bahan/{bahanId}/update', [ProdukController::class, 'updateBahan']);
-// Route::delete('/bahan/{id}', [ProdukController::class, 'hapusBahan']);
-
-
-
-// Route::get('/roles',[PagesController::class,'roles'])->name('roles');
-// Route::post('/roles/store',[RolesController::class,'store'])->name('roles.store');
-// // Update role
-// Route::put('/roles/{id}', [RolesController::class, 'update'])->name('roles.update');
-// // Matikan (soft delete) role
-// Route::delete('/roles/{id}', [RolesController::class, 'destroy'])->name('roles.destroy');
-
-
-// Route::get('/aksesRole/user',[HakAksesRoleController::class,'searchUserName'])->name('user.search.name');
-// Route::post('/aksesRole/store-user',[HakAksesRoleController::class,'storeUser'])->name('user.insert');
-// Route::post('/aksesRole/store',[HakAksesRoleController::class,'updateUserRole'])->name('user.update');
-// Route::post('/aksesRole/update-role/{id}', [HakAksesRoleController::class, 'updateUserRole'])->name('user.update-role');
-// Route::delete('/aksesRole/delete-user/{id}', [HakAksesRoleController::class, 'deleteUser'])->name('user.delete');
 
 
 

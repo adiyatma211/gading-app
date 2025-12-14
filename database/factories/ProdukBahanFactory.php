@@ -17,7 +17,11 @@ class ProdukBahanFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'produk_id' => \App\Models\Produk::factory(),
+            'nama_bahan' => $this->faker->words(2, true),
+            'harga_per_meter' => $this->faker->randomFloat(2, 1000, 50000),
+            'diskon' => $this->faker->randomFloat(2, 0, 10000),
+            'total_harga' => $this->faker->randomFloat(2, 10000, 500000),
         ];
     }
 }

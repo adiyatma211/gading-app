@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('jenis_pelanggan')->nullable();
             $table->text('alamat');
             $table->tinyInteger('deleteSts')->default(0);
-            $table->unsignedBigInteger('createdBy')->nullable();
-            $table->unsignedBigInteger('updatedBy')->nullable();
+            $table->string('createdBy')->nullable();
+            $table->string('updatedBy')->nullable();
             $table->timestamps();
         });
     }

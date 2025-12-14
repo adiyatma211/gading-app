@@ -66,7 +66,7 @@
 <body>
     @if ($transaction->status_pembayaran === 'lunas')
         <div class="watermark">
-            @if(!empty($watermarkData))
+            @if (!empty($watermarkData))
                 <img src="{{ $watermarkData }}" width="150">
             @endif
         </div>
@@ -75,8 +75,9 @@
     <table>
         <tr>
             <td style="width: 60%; border: none;">
-                <h2 style="margin: 0; color: red;">GADING PRINT</h2>
-                <p style="margin: 0;">Digital Print Solution</p>
+                @if (!empty($logoData))
+                    <img src="{{ $logoData }}" alt="Logo" style="margin-top:20px;" height="60">
+                @endif
                 <p style="margin: 5px 0;">
                     Jl. Raya Sendangmulyo No.5, Meteseh, Tembalang,<br>Kota Semarang, Jawa Tengah 50271
                 </p>
@@ -98,6 +99,7 @@
                         <td>{{ $transaction->nomor_faktur ?? '-' }}</td>
                     </tr>
                 </table>
+
             </td>
         </tr>
     </table>
@@ -123,7 +125,8 @@
                     <td>{{ $a->panjang }} x {{ $a->lebar }}</td>
                     <td>{{ number_format($a->harga_per_meter, 0, ',', '.') }}</td>
                     <td>1</td>
-                    <td>{{ number_format($a->total_harga ?? ($a->harga_per_meter * $a->panjang * $a->lebar), 0, ',', '.') }}</td>
+                    <td>{{ number_format($a->total_harga ?? $a->harga_per_meter * $a->panjang * $a->lebar, 0, ',', '.') }}
+                    </td>
                 </tr>
                 @if (($a->diskon_barang ?? 0) > 0)
                     <tr>
@@ -158,14 +161,15 @@
 
     <p class="mt-10">
         <strong>Terbilang:</strong>
-        <span id="terbilangText"
-            style="border-bottom: 1px solid black; display: inline-block; width: 90%; padding-left: 10px;"></span>
+        <span style="border-bottom: 1px solid black; display: inline-block; width: 90%; padding-left: 10px;">
+            {{ \App\Helpers\TerbilangHelper::convert($transaction->total ?? 0) }} Rupiah
+        </span>
     </p>
 
-    <table style="width: 100%; margin-top: 10px;">
+    <table style="width: 100%; margin-top: 20px;">
         <tr>
-            <td style="width: 70%; vertical-align: top; text-align: left; border: none;">
-                <div style="float: left; width: 60%;">
+            <td style="width: 33.33%; vertical-align: top; text-align: left; border: none;">
+                <div style="height: 100px; display: flex; flex-direction: column; justify-content: flex-end;">
                     <p><b>Keterangan :</b></p>
                     <ul style="padding-left: 15px; margin-top: 5px; margin-bottom: 5px;">
                         <li>Komplain max. dalam 24 jam</li>
@@ -179,60 +183,37 @@
                         </li>
                     </ul>
                 </div>
-
-                <div style="float: right; width: 35%; text-align: center;">
+            </td>
+            <td style="width: 33.33%; vertical-align: top; text-align: center; border: none;">
+                <div
+                    style="height: 100px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">
                     <p><b>Hormat Kami,</b></p>
-                    @if(!empty($logoData))
+                    @if (!empty($logoData))
                         <img src="{{ $logoData }}" alt="Logo" style="margin-top: 20px;" height="60">
                     @endif
                 </div>
             </td>
-            <td class="no-border" style="width: 30%; text-align: right; padding-right: 10px;">
+            <td style="width: 33.33%; vertical-align: top; text-align: right; border: none;">
                 <div
-                    style="
-            height: 150px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            align-items: flex-end;
-            margin-bottom: 120px; /* 👈 Ubah angka ini untuk sesuaikan tinggi */
-        ">
-                    <strong style="font-size: 10px;">TOTAL INVOICE</strong>
-                    <span style="font-size: 20px; font-weight: bold;">
-                        {{ number_format($transaction->total, 0, ',', '.') }}
-                    </span>
+                    style="height: 100px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end;">
+                    <div
+                        style="padding: 10px; border: 1px solid black; background-color: #f9f9f9; display: inline-block;">
+                        <strong style="font-size: 10px;">TOTAL INVOICE</strong><br>
+                        <span style="font-size: 18px; font-weight: bold;">
+                            Rp {{ number_format($transaction->total, 0, ',', '.') }}
+                        </span>
+                    </div>
                 </div>
             </td>
-
         </tr>
     </table>
 
-    <p style="margin-top: 10px;">
-        <strong>Nota dibuat oleh:</strong> {{ Auth::user()->name ?? 'System' }}<br>
-        <strong>Tanggal cetak:</strong> {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}
-    </p>
-
-    <script>
-        function terbilangJS(angka) {
-            var satuan = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh",
-                "Sebelas"
-            ];
-            angka = parseInt(angka);
-            if (isNaN(angka) || angka < 0) return "Nol";
-            if (angka < 12) return satuan[angka];
-            if (angka < 20) return satuan[angka - 10] + " Belas";
-            if (angka < 100) return terbilangJS(Math.floor(angka / 10)) + " Puluh " + terbilangJS(angka % 10);
-            if (angka < 200) return "Seratus " + terbilangJS(angka - 100);
-            if (angka < 1000) return terbilangJS(Math.floor(angka / 100)) + " Ratus " + terbilangJS(angka % 100);
-            if (angka < 2000) return "Seribu " + terbilangJS(angka - 1000);
-            if (angka < 1000000) return terbilangJS(Math.floor(angka / 1000)) + " Ribu " + terbilangJS(angka % 1000);
-            if (angka < 1000000000) return terbilangJS(Math.floor(angka / 1000000)) + " Juta " + terbilangJS(angka %
-                1000000);
-            return "Angka terlalu besar";
-        }
-        let total = {{ $transaction->total ?? 0 }};
-        document.getElementById('terbilangText').innerText = terbilangJS(total) + " Rupiah";
-    </script>
+    <div style="margin-top: 10px;">
+        <p>
+            <strong>Nota dibuat oleh:</strong> {{ Auth::user()->name ?? 'System' }}<br>
+            <strong>Tanggal cetak:</strong> {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}
+        </p>
+    </div>
 
 </body>
 

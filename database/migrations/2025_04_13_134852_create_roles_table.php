@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
-            $table->string('roles');
+            $table->string('rolesName');
             $table->string('keterangan');
+            $table->integer('deleteSts')->default(0);
             $table->timestamps();
         });
     }

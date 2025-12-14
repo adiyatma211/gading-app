@@ -12,30 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transaction_items', function (Blueprint $table) {
-            $table->id();
+            // Add missing fields that don't exist in the original table
+            $table->integer('qty')->nullable()->after('lebar');
+            $table->integer('sisi')->nullable()->after('qty');
+            $table->string('laminasi')->nullable()->after('sisi');
+            $table->integer('diskon_barang')->nullable()->default(0)->after('harga_per_meter');
+            $table->integer('total_harga')->nullable()->after('diskon_barang');
 
-        $table->unsignedBigInteger('transaction_id');
-        $table->unsignedBigInteger('tipe_produk_id');
-
-        $table->decimal('panjang', 8, 2)->nullable();
-        $table->decimal('lebar', 8, 2)->nullable();
-        $table->integer('qty')->nullable();
-
-        $table->string('sisi')->nullable(); // jika enum: bisa diganti ->enum('sisi', ['1', '2'])
-        $table->string('laminasi')->nullable(); // bisa juga enum('ya', 'tidak')
-
-        $table->decimal('harga_per_meter', 10, 2);
-        $table->decimal('diskon_barang', 10, 2)->default(0);
-        $table->decimal('total_harga', 15, 2);
-
-        $table->text('keterangan')->nullable();
-
-        $table->string('createdBy')->nullable();
-        $table->string('updatedBy')->nullable();
-
-        $table->tinyInteger('deleteSts')->default(0);
-
-        $table->timestamps();
+            // Modify existing fields to match production database
+            $table->decimal('panjang', 8, 2)->default(0.00)->change();
+            $table->decimal('lebar', 8, 2)->default(0.00)->change();
+            $table->decimal('harga_per_meter', 15, 2)->default(0.00)->change();
         });
     }
 
@@ -45,7 +32,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transaction_items', function (Blueprint $table) {
-            //
+            $table->dropColumn(['qty', 'sisi', 'laminasi', 'diskon_barang', 'total_harga']);
         });
     }
 };

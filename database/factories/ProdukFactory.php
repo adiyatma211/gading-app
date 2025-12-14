@@ -17,7 +17,9 @@ class ProdukFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nama_produk' => $this->faker->words(3, true),
+            'tipe_produk' => $this->faker->randomElement(['per_meter', 'tiered', 'flat', 'custom']),
+            'status' => 1,
         ];
     }
 }

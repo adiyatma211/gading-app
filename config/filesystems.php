@@ -60,6 +60,34 @@ return [
             'report' => false,
         ],
 
+        // PDF Storage Disks
+        'pdf_storage' => [
+            'driver' => 'local',
+            'root' => storage_path('app/pdfs'),
+            'url' => env('APP_URL').'/pdfs',
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'pdf_archive' => [
+            'driver' => 'local',
+            'root' => storage_path('app/pdfs/archive'),
+            'url' => env('APP_URL').'/pdfs/archive',
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'pdf_public' => [
+            'driver' => 'local',
+            'root' => public_path('pdfs'),
+            'url' => env('APP_URL').'/pdfs',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\Validator;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 use App\Http\Requests\UpdatetransactionsRequest;
+use App\Services\PDFStorageService;
+use App\Services\PDFCompressionService;
 
 
 class TransactionsController extends Controller
@@ -346,6 +348,10 @@ class TransactionsController extends Controller
     $logoData = $this->imageToDataUri(File::exists($logoPath2) ? $logoPath2 : $logoPath);
     $watermarkData = $this->imageToDataUri($watermarkPath);
 
+    // Initialize storage service
+    $storageService = app(PDFStorageService::class);
+    $compressionService = app(PDFCompressionService::class);
+
     // === 1. Generate PDF versi pertama (nota_file) ===
     $pdfContent1 = view('Transaksi.v_notav1', [
         'transaction' => $transaction,
@@ -356,7 +362,6 @@ class TransactionsController extends Controller
         'thermalWidth' => (float) config('print.thermal_width_mm', 72),
     ])->render();
 
-    $fileName1 = 'nota_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
     // Hitung ukuran kertas thermal berdasarkan config
     $widthMm = (float) config('print.thermal_width_mm', 58);
     $widthPt = $widthMm * 2.83465; // 1mm = 2.83465pt
@@ -365,11 +370,6 @@ class TransactionsController extends Controller
     $perItemPt = 90;     // tinggi per item rata-rata
     $heightPt = $baseHeightPt + ($itemsCount * $perItemPt);
     $pdf1 = $this->renderPdfSafe($pdfContent1, [0, 0, $widthPt, $heightPt], 'portrait');
-    $notaDir = public_path('nota');
-    if (!File::exists($notaDir)) {
-        File::makeDirectory($notaDir, 0755, true);
-    }
-    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName1, $pdf1);
 
     // === 2. Generate PDF versi kedua (nota_file_dua) ===
     $pdfContent2 = view('Transaksi.v_nota', [
@@ -380,17 +380,36 @@ class TransactionsController extends Controller
         'watermarkData' => $watermarkData,
     ])->render();
 
-    $fileName2 = 'nota_dua_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
     $pdf2 = $this->renderPdfSafe($pdfContent2, 'a4', 'landscape');
-    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName2, $pdf2);
 
-    // === 3. Update ke tabel transactions ===
+    // === 3. Store PDFs using new storage service ===
+    $result1 = $storageService->storePDF($pdf1, 'thermal', $transaction->id, $transaction->created_at);
+
+    $result2 = $storageService->storePDF($pdf2, 'invoice', $transaction->id, $transaction->created_at);
+
+    if (!$result1['success'] || !$result2['success']) {
+        Log::error('Failed to store PDF using new storage service', [
+            'result1' => $result1,
+            'result2' => $result2,
+            'transaction_id' => $transaction->id
+        ]);
+
+        // Fallback to old method
+        return $this->generateNotaFileFallback($transaction, $pdf1, $pdf2, $custName);
+    }
+
+    // === 4. Update ke tabel transactions (backward compatibility) ===
     $transaction->update([
-        'nota_file' => $fileName1,
-        'nota_file_dua' => $fileName2
+        'nota_file' => $result1['file_name'],
+        'nota_file_dua' => $result2['file_name'],
+        'pdf_storage_path' => $result1['file_path'],
+        'pdf_storage_path_invoice' => $result2['file_path'], // Tambahkan path untuk invoice
+        'pdf_storage_type' => 'thermal',
+        'pdf_storage_hash' => $result1['file_hash'],
+        'pdf_storage_size' => $result1['file_size'],
     ]);
 
-    // === 4. Simpan ke history_nota hanya file utama ===
+    // === 5. Simpan ke history_nota hanya file utama ===
     $lastId = Transactions::max('id') + 1;
     $nomorFaktur = 'FK-' . str_pad($lastId, 3, '0', STR_PAD_LEFT) . '/' . date('m') . '/' . date('Y');
 
@@ -398,19 +417,79 @@ class TransactionsController extends Controller
         'transaction_id' => $transaction->id,
         'nomor_faktur'   => $nomorFaktur,
         'customer_id'    => $transaction->customer_id,
-        'nota_file'      => $fileName1,
+        'nota_file'      => $result1['file_name'], // Use new filename
         'tanggal_cetak'  => now(),
         'deleteSts'      => 0,
         'createdBy'      => Auth::user()?->name ?? 'System',
         'updatedBy'      => Auth::user()?->name ?? 'System',
     ]);
 
-    Log::info('Nota utama & kedua berhasil dibuat', [
+    Log::info('Nota utama & kedua berhasil dibuat dengan storage service baru', [
+        'nota_file' => $result1['file_name'],
+        'nota_file_dua' => $result2['file_name'],
+        'storage_path_1' => $result1['file_path'],
+        'storage_path_2' => $result2['file_path'],
+        'file_size_1' => $result1['file_size'],
+        'file_size_2' => $result2['file_size'],
+    ]);
+
+    // Auto-compress if enabled
+    if (config('pdf.compression.auto_compress', false)) {
+        $this->compressPDFAsync($result1['file_path'], $result2['file_path']);
+    }
+
+    return $result1['file_path'];
+}
+
+/**
+ * Fallback method for PDF generation using old system
+ */
+private function generateNotaFileFallback($transaction, string $pdf1, string $pdf2, string $custName): string
+{
+    $fileName1 = 'nota_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
+    $fileName2 = 'nota_dua_' . now()->format('Ymd_His') . '_' . Str::slug($custName) . '.pdf';
+    $notaDir = public_path('nota');
+
+    if (!File::exists($notaDir)) {
+        File::makeDirectory($notaDir, 0755, true);
+    }
+
+    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName1, $pdf1);
+    file_put_contents($notaDir . DIRECTORY_SEPARATOR . $fileName2, $pdf2);
+
+    // Update transaction with fallback files
+    $transaction->update([
+        'nota_file' => $fileName1,
+        'nota_file_dua' => $fileName2
+    ]);
+
+    Log::warning('Used fallback method for PDF generation', [
+        'transaction_id' => $transaction->id,
         'nota_file' => $fileName1,
         'nota_file_dua' => $fileName2,
     ]);
 
-    return $fileName1; // bisa juga return array jika perlu
+    // Return the relative path from public directory
+    return 'nota/' . $fileName1;
+}
+
+/**
+ * Asynchronous PDF compression
+ */
+private function compressPDFAsync(string $filePath1, string $filePath2): void
+{
+    try {
+        // Queue compression for background processing
+        // This can be implemented with Laravel queues if needed
+        Log::info('PDF compression queued', [
+            'file_paths' => [$filePath1, $filePath2]
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Failed to queue PDF compression', [
+            'error' => $e->getMessage(),
+            'file_paths' => [$filePath1, $filePath2]
+        ]);
+    }
 }
 
     private function imageToDataUri(?string $path, ?string $mime = null): ?string
@@ -587,27 +666,27 @@ class TransactionsController extends Controller
 
     public function updateTransaksi(Request $request)
     {
-        try {
-            // Validasi input
-            $validator = Validator::make($request->all(), [
-                'id_transaksi' => 'required|exists:transactions,id',
-                'tanggal_ambil' => 'nullable|date',
-                'diambil_oleh' => 'nullable|string|max:255',
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'id_transaksi' => 'required|exists:transactions,id',
+            'tanggal_ambil' => 'nullable|date',
+            'diambil_oleh' => 'nullable|string|max:255',
 
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Validasi gagal pada updateTransaksi:', [
+                'errors' => $validator->errors(),
+                'input' => $request->all()
             ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-            if ($validator->fails()) {
-                Log::warning('Validasi gagal pada updateTransaksi:', [
-                    'errors' => $validator->errors(),
-                    'input' => $request->all()
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validasi gagal.',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
+        try {
             // Cari data transaksi
             $transaksi = transactions::findOrFail($request->input('id_transaksi'));
 
