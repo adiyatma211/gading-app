@@ -9,6 +9,11 @@ use App\Http\Controllers\ProdukNewController;
 use App\Http\Controllers\HakAksesRoleController;
 use App\Http\Controllers\TransactionsController;
 use App\Http\Controllers\Pengaturan\RolesController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\HolidayController;
+use App\Http\Controllers\StoreController;
+use App\Http\Controllers\AttendanceSettingController;
+use App\Http\Controllers\ApprovalReviewController;
 
 Route::get('/', function () {
     return view('auth.login');
@@ -84,6 +89,25 @@ Route::delete('/harga-produk/{id}', [ProdukNewController::class, 'destroyHarga']
     Route::get('/report', [PagesController::class, 'transaksiReport'])->name('report');
     Route::post('/laporan/transaksi/data', [PagesController::class, 'getDataTransaksi'])->name('laporan.transaksi.data');
     Route::get('/export-transaksi', [PagesController::class, 'exportExcel'])->name('export.transaksi');
+
+    // Admin: Presensi (Stores, Settings, Holidays, Approvals)
+    Route::get('/stores', [StoreController::class, 'index']);
+    Route::post('/stores', [StoreController::class, 'store']);
+    Route::put('/stores/{store}', [StoreController::class, 'update']);
+
+    Route::get('/stores/{store}/attendance-settings', [AttendanceSettingController::class, 'show']);
+    Route::post('/stores/{store}/attendance-settings', [AttendanceSettingController::class, 'upsert']);
+
+    Route::get('/holidays', [HolidayController::class, 'index']);
+    Route::post('/holidays', [HolidayController::class, 'store']);
+    Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy']);
+
+    Route::get('/attendance/approvals/pending', [ApprovalReviewController::class, 'pending']);
+    Route::post('/attendance/approvals/{id}/approve', [ApprovalReviewController::class, 'approve']);
+    Route::post('/attendance/approvals/{id}/reject', [ApprovalReviewController::class, 'reject']);
+
+    // Admin Presensi UI
+    Route::get('/presensi/admin', [PagesController::class, 'presensiAdmin'])->name('presensi.admin');
 });
 
 // Route khusus untuk Kasir
@@ -95,6 +119,15 @@ Route::middleware(['auth', 'check.role:kasir,Owner,superadmin,SuperAdmin,Super A
     Route::post('/transaksi/updateTransaksi', [TransactionsController::class, 'updateTransaksi'])->name('transaksi.updateTransaksi');
     Route::post('/transaksi/print-thermal/{id}', [TransactionsController::class, 'printThermal'])->name('transaksi.printThermal');
     Route::post('/transaksi/print-thermal-test', [TransactionsController::class, 'testThermal'])->name('transaksi.printThermal.test');
+
+    // Staff: Presensi
+    Route::get('/attendance/me', [AttendanceController::class, 'myAttendances']);
+    Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn']);
+    Route::post('/attendance/check-out', [AttendanceController::class, 'checkOut']);
+    Route::post('/attendance/{attendanceId}/request-approval', [AttendanceController::class, 'requestApproval']);
+
+    // Staff Presensi UI
+    Route::get('/presensi', [PagesController::class, 'presensiAbsen'])->name('presensi.absen');
 });
 
 

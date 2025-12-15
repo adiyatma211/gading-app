@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('produks', function (Blueprint $table) {
-            $table->enum('tipe_produk', ['per_meter', 'tiered', 'flat', 'custom'])->nullable()->after('nama_produk');
-        });
+        if (!Schema::hasColumn('produks', 'tipe_produk')) {
+            Schema::table('produks', function (Blueprint $table) {
+                $table->enum('tipe_produk', ['per_meter', 'tiered', 'flat', 'custom'])->nullable()->after('nama_produk');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('produk', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasColumn('produks', 'tipe_produk')) {
+            Schema::table('produks', function (Blueprint $table) {
+                $table->dropColumn('tipe_produk');
+            });
+        }
     }
 };

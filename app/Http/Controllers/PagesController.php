@@ -96,6 +96,16 @@ class PagesController extends Controller
         return view('report.v_report', compact('transaction'));
     }
 
+    public function presensiAdmin()
+    {
+        return view('Presensi.v_admin');
+    }
+
+    public function presensiAbsen()
+    {
+        return view('Presensi.v_absen');
+    }
+
 
     // Server Side
     public function getDataTransaksi(Request $request)

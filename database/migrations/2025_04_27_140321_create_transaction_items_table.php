@@ -11,19 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transaction_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('transaction_id')->constrained('transactions')->cascadeOnDelete();
-            $table->unsignedBigInteger('tipe_produk_id')->nullable(); // Sesuai ID produk (opsional)
-            $table->decimal('panjang', 8, 2)->default(0);
-            $table->decimal('lebar', 8, 2)->default(0);
-            $table->decimal('harga_per_meter', 15, 2)->default(0);
-            $table->text('keterangan')->nullable();
-            $table->unsignedBigInteger('createdBy')->nullable();
-            $table->unsignedBigInteger('updatedBy')->nullable();
-            $table->tinyInteger('deleteSts')->default(0);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('transaction_items')) {
+            Schema::create('transaction_items', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('transaction_id')->constrained('transactions')->cascadeOnDelete();
+                $table->unsignedBigInteger('tipe_produk_id')->nullable(); // Sesuai ID produk (opsional)
+                $table->decimal('panjang', 8, 2)->default(0);
+                $table->decimal('lebar', 8, 2)->default(0);
+                $table->decimal('harga_per_meter', 15, 2)->default(0);
+                $table->text('keterangan')->nullable();
+                $table->unsignedBigInteger('createdBy')->nullable();
+                $table->unsignedBigInteger('updatedBy')->nullable();
+                $table->tinyInteger('deleteSts')->default(0);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

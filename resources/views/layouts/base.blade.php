@@ -110,6 +110,15 @@
                             </ul>
                         </li>
 
+                        {{-- Presensi (Semua role) --}}
+                        <li class="sidebar-title">Presensi</li>
+                        <li class="sidebar-item">
+                            <a href="{{ route('presensi.absen') }}" class='sidebar-link'>
+                                <i class="bi bi-fingerprint"></i>
+                                <span>Absen</span>
+                            </a>
+                        </li>
+
                         {{-- Laporan (hanya SuperAdmin & Owner) --}}
                         @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
                             <li class="sidebar-title">Laporan</li>
@@ -129,6 +138,12 @@
                         {{-- Pengaturan (hanya SuperAdmin & Owner) --}}
                         @if (Auth::user()->role && in_array(Auth::user()->role->rolesName, ['SuperAdmin', 'Owner']))
                             <li class="sidebar-title">Pengaturan</li>
+                            <li class="sidebar-item">
+                                <a href="{{ route('presensi.admin') }}" class='sidebar-link'>
+                                    <i class="bi bi-geo-alt-fill"></i>
+                                    <span>Presensi (Admin)</span>
+                                </a>
+                            </li>
                             <li class="sidebar-item">
                                 <a href="{{ route('roles') }}" class='sidebar-link'>
                                     <i class="bi bi-person-badge-fill"></i>
