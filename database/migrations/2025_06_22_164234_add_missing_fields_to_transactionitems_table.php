@@ -12,62 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transaction_items', function (Blueprint $table) {
-            if (!Schema::hasColumn('transaction_items', 'id')) {
-                $table->id();
-            }
+            // Add missing fields that don't exist in the original table
+            $table->integer('qty')->nullable()->after('lebar');
+            $table->integer('sisi')->nullable()->after('qty');
+            $table->string('laminasi')->nullable()->after('sisi');
+            $table->integer('diskon_barang')->nullable()->default(0)->after('harga_per_meter');
+            $table->integer('total_harga')->nullable()->after('diskon_barang');
 
-            if (!Schema::hasColumn('transaction_items', 'transaction_id')) {
-                $table->unsignedBigInteger('transaction_id');
-            }
-            if (!Schema::hasColumn('transaction_items', 'tipe_produk_id')) {
-                $table->unsignedBigInteger('tipe_produk_id')->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'panjang')) {
-                $table->decimal('panjang', 8, 2)->nullable();
-            }
-            if (!Schema::hasColumn('transaction_items', 'lebar')) {
-                $table->decimal('lebar', 8, 2)->nullable();
-            }
-            if (!Schema::hasColumn('transaction_items', 'qty')) {
-                $table->integer('qty')->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'sisi')) {
-                $table->string('sisi')->nullable();
-            }
-            if (!Schema::hasColumn('transaction_items', 'laminasi')) {
-                $table->string('laminasi')->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'harga_per_meter')) {
-                $table->decimal('harga_per_meter', 10, 2)->nullable();
-            }
-            if (!Schema::hasColumn('transaction_items', 'diskon_barang')) {
-                $table->decimal('diskon_barang', 10, 2)->default(0);
-            }
-            if (!Schema::hasColumn('transaction_items', 'total_harga')) {
-                $table->decimal('total_harga', 15, 2)->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'keterangan')) {
-                $table->text('keterangan')->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'createdBy')) {
-                $table->string('createdBy')->nullable();
-            }
-            if (!Schema::hasColumn('transaction_items', 'updatedBy')) {
-                $table->string('updatedBy')->nullable();
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'deleteSts')) {
-                $table->tinyInteger('deleteSts')->default(0);
-            }
-
-            if (!Schema::hasColumn('transaction_items', 'created_at') && !Schema::hasColumn('transaction_items', 'updated_at')) {
-                $table->timestamps();
-            }
+            // Modify existing fields to match production database
+            $table->decimal('panjang', 8, 2)->default(0.00)->change();
+            $table->decimal('lebar', 8, 2)->default(0.00)->change();
+            $table->decimal('harga_per_meter', 15, 2)->default(0.00)->change();
         });
     }
 
@@ -77,7 +32,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transaction_items', function (Blueprint $table) {
-            // No-op: intentionally left blank to avoid dropping columns inadvertently
+            $table->dropColumn(['qty', 'sisi', 'laminasi', 'diskon_barang', 'total_harga']);
         });
     }
 };

@@ -79,7 +79,14 @@ class ProdukNewController extends Controller
     if (isset($data['harga']) && is_array($data['harga'])) {
         foreach ($data['harga'] as $index => $hargaItem) {
             $laminasi = $hargaItem['laminasi'] ?? null;
-            $data['harga'][$index]['laminasi'] = ($laminasi === 'on' || $laminasi === 1 || $laminasi === '1') ? true : false;
+            // Convert string values to boolean properly
+            if ($laminasi === 'on' || $laminasi === '1' || $laminasi === 1) {
+                $data['harga'][$index]['laminasi'] = true;
+            } elseif ($laminasi === false) {
+                $data['harga'][$index]['laminasi'] = false;
+            } else {
+                $data['harga'][$index]['laminasi'] = (bool)$laminasi;
+            }
         }
     }
 
@@ -88,7 +95,7 @@ class ProdukNewController extends Controller
         'nama_produk' => 'required|string|max:255',
         'tipe_produk' => ['required', Rule::in(['per_meter', 'tiered', 'flat', 'custom'])],
         'harga.*.harga' => 'required|numeric|min:0',
-        'harga.*.diskon' => 'nullable|numeric|min:0',
+        'harga.*.diskon' => 'nullable|integer|min:0',
         'harga.*.min_qty' => 'nullable|integer',
         'harga.*.max_qty' => 'nullable|integer',
         'harga.*.sisi' => 'nullable|in:1,2',
@@ -113,13 +120,21 @@ class ProdukNewController extends Controller
 
         // Simpan harga
         foreach ($data['harga'] as $hargaData) {
+            $diskonValue = (int)($hargaData['diskon'] ?? 0);
+            Log::info('Menyimpan harga produk baru dengan diskon:', [
+                'produk_id' => $produk->id,
+                'diskon_original' => $hargaData['diskon'] ?? null,
+                'diskon_converted' => $diskonValue,
+                'diskon_type' => gettype($diskonValue)
+            ]);
+
             HargaProdukNew::create([
                 'produk_id' => $produk->id,
                 'harga' => $hargaData['harga'] ?? 0,
                 'min_qty' => $hargaData['min_qty'] ?? null,
                 'max_qty' => $hargaData['max_qty'] ?? null,
                 'sisi' => $hargaData['sisi'] ?? null,
-                'diskon' => $hargaData['diskon'] ?? null,
+                'diskon' => $diskonValue,
                 'laminasi' => $hargaData['laminasi'] ?? false, // Sudah boolean
             ]);
         }
@@ -160,20 +175,12 @@ class ProdukNewController extends Controller
     // 🔹 Update Produk
     public function update(Request $request, $id)
     {
-        $produk = Produk::find($id);
-        if (!$produk) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Produk tidak ditemukan'
-            ], 404);
-        }
-
         // Validasi input
         $validator = Validator::make($request->all(), [
             'nama_produk' => 'required|string|max:255',
             'tipe_produk' => ['required', Rule::in(['per_meter', 'tiered', 'flat', 'custom'])],
             'harga.*.harga' => 'required|numeric|min:0',
-            'harga.*.diskon' => 'nullable|numeric|min:0',
+            'harga.*.diskon' => 'nullable|integer|min:0',
             'harga.*.min_qty' => 'nullable|integer',
             'harga.*.max_qty' => 'nullable|integer',
             'harga.*.sisi' => 'nullable|in:1,2',
@@ -189,6 +196,13 @@ class ProdukNewController extends Controller
         }
 
         try {
+            $produk = Produk::find($id);
+            if (!$produk) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Produk tidak ditemukan'
+                ], 404);
+            }
             // Update produk
             $produk->update([
                 'nama_produk' => $request->nama_produk,
@@ -200,13 +214,21 @@ class ProdukNewController extends Controller
 
             // Simpan harga baru
             foreach ($request->harga as $hargaData) {
+                $diskonValue = (int)($hargaData['diskon'] ?? 0);
+                Log::info('Memperbarui harga produk dengan diskon:', [
+                    'produk_id' => $produk->id,
+                    'diskon_original' => $hargaData['diskon'] ?? null,
+                    'diskon_converted' => $diskonValue,
+                    'diskon_type' => gettype($diskonValue)
+                ]);
+
                 HargaProdukNew::create([
                     'produk_id' => $produk->id,
                     'harga' => $hargaData['harga'] ?? 0,
                     'min_qty' => $hargaData['min_qty'] ?? null,
                     'max_qty' => $hargaData['max_qty'] ?? null,
                     'sisi' => $hargaData['sisi'] ?? null,
-                    'diskon' => $hargaData['diskon'] ?? null,
+                    'diskon' => $diskonValue,
                     'laminasi' => $hargaData['laminasi'] ?? false,
                 ]);
             }

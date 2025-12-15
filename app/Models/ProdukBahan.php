@@ -13,6 +13,12 @@ class ProdukBahan extends Model
 
     protected $guarded=['id'];
 
+    protected $casts = [
+        'harga_per_meter' => 'decimal:2',
+        'diskon' => 'decimal:2',
+        'total_harga' => 'decimal:2',
+    ];
+
     public function produk()
     {
         return $this->belongsTo(Produk::class, 'produk_id');

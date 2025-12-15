@@ -11,20 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('customers')) {
-            Schema::create('customers', function (Blueprint $table) {
-                $table->id();
-                $table->string('nama');
-                $table->string('telepon');
-                $table->string('email')->nullable();
-                $table->string('jenis_pelanggan')->nullable();
-                $table->text('alamat');
-                $table->tinyInteger('deleteSts')->default(0);
-                $table->unsignedBigInteger('createdBy')->nullable();
-                $table->unsignedBigInteger('updatedBy')->nullable();
-                $table->timestamps();
-            });
-        }
+        Schema::create('customers', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama');
+            $table->string('telepon');
+            $table->string('email')->nullable();
+            $table->string('jenis_pelanggan')->nullable();
+            $table->text('alamat');
+            $table->tinyInteger('deleteSts')->default(0);
+            $table->string('createdBy')->nullable();
+            $table->string('updatedBy')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

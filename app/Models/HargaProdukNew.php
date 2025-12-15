@@ -14,6 +14,12 @@ class HargaProdukNew extends Model
 
     protected $guarded =['id'];
 
+    protected $casts = [
+        'harga' => 'decimal:2',
+        'diskon' => 'integer',
+        'laminasi' => 'boolean',
+    ];
+
     /**
      * Relasi ke model Produk
      */

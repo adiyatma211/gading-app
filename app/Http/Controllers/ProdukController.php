@@ -17,16 +17,16 @@ class ProdukController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            // Validasi data
-            $request->validate([
-                'nama_produk' => 'required|string',
-                'bahan.*.nama_bahan' => 'required|string',
-                'bahan.*.harga_per_meter' => 'required|numeric|min:0',
-                'bahan.*.diskon' => 'nullable|numeric|min:0',
-                'bahan.*.total_harga' => 'nullable|numeric|min:0',
-            ]);
+        // Validasi data
+        $request->validate([
+            'nama_produk' => 'required|string',
+            'bahan.*.nama_bahan' => 'required|string',
+            'bahan.*.harga_per_meter' => 'required|numeric|min:0',
+            'bahan.*.diskon' => 'nullable|numeric|min:0',
+            'bahan.*.total_harga' => 'nullable|numeric|min:0',
+        ]);
 
+        try {
             DB::beginTransaction();
 
             // Simpan Produk
@@ -66,12 +66,19 @@ class ProdukController extends Controller
      */
     public function edit($id)
     {
-        $produk = Produk::with('bahan')->findOrFail($id);
-        return response()->json([
-            'status' => true,
-            'message' => 'Produk ditemukan',
-            'data' => $produk
-        ]);
+        try {
+            $produk = Produk::with('bahan')->findOrFail($id);
+            return response()->json([
+                'status' => true,
+                'message' => 'Produk ditemukan',
+                'data' => $produk
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Produk tidak ditemukan'
+            ], 404);
+        }
     }
 
     /**
@@ -87,37 +94,45 @@ class ProdukController extends Controller
             'bahan.*.total_harga' => 'nullable|numeric|min:0',
         ]);
 
-        $produk = Produk::findOrFail($id);
-        $produk->update(['nama_produk' => $request->input('nama_produk')]);
+        try {
+            $produk = Produk::findOrFail($id);
+            $produk->update(['nama_produk' => $request->input('nama_produk')]);
 
-        // Ambil semua ID bahan yang dikirim dari form (yang masih dipertahankan atau diubah)
-        $submittedIds = collect($request->input('bahan'))->pluck('id')->filter()->all();
-        $produk->bahan()->whereNotIn('id', $submittedIds)->delete();
+            // Ambil semua ID bahan yang dikirim dari form (yang masih dipertahankan atau diubah)
+            $submittedIds = collect($request->input('bahan'))->pluck('id')->filter()->all();
+            $produk->bahan()->whereNotIn('id', $submittedIds)->delete();
 
-        // Update atau insert bahan
-        foreach ($request->input('bahan', []) as $bahan) {
-            if (!empty($bahan['id'])) {
-                $produk->bahan()->where('id', $bahan['id'])->update([
-                    'nama_bahan' => $bahan['nama_bahan'],
-                    'harga_per_meter' => $bahan['harga_per_meter'],
-                    'diskon' => $bahan['diskon'] ?? 0,
-                    'total_harga' => $bahan['total_harga'] ?? 0
-                ]);
-            } else {
-                $produk->bahan()->create([
-                    'nama_bahan' => $bahan['nama_bahan'],
-                    'harga_per_meter' => $bahan['harga_per_meter'],
-                    'diskon' => $bahan['diskon'] ?? 0,
-                    'total_harga' => $bahan['total_harga'] ?? 0
-                ]);
+            // Update atau insert bahan
+            foreach ($request->input('bahan', []) as $bahan) {
+                if (!empty($bahan['id'])) {
+                    $produk->bahan()->where('id', $bahan['id'])->update([
+                        'nama_bahan' => $bahan['nama_bahan'],
+                        'harga_per_meter' => $bahan['harga_per_meter'],
+                        'diskon' => $bahan['diskon'] ?? 0,
+                        'total_harga' => $bahan['total_harga'] ?? 0
+                    ]);
+                } else {
+                    $produk->bahan()->create([
+                        'nama_bahan' => $bahan['nama_bahan'],
+                        'harga_per_meter' => $bahan['harga_per_meter'],
+                        'diskon' => $bahan['diskon'] ?? 0,
+                        'total_harga' => $bahan['total_harga'] ?? 0
+                    ]);
+                }
             }
-        }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Produk berhasil diperbarui',
-            'data' => $produk->load('bahan')
-        ]);
+            return response()->json([
+                'status' => true,
+                'message' => 'Produk berhasil diperbarui',
+                'data' => $produk->load('bahan')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Gagal memperbarui produk',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

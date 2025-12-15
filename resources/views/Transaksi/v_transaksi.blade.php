@@ -125,11 +125,13 @@
                         <div class="col-md-12">
                             <label class="form-label d-block">Sumber Data Customer</label>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="mode_customer" id="modeBaru" value="baru" checked>
+                                <input class="form-check-input" type="radio" name="mode_customer" id="modeBaru"
+                                    value="baru" checked>
                                 <label class="form-check-label" for="modeBaru">Pelanggan Baru</label>
                             </div>
                             <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="mode_customer" id="modeTerdaftar" value="terdaftar">
+                                <input class="form-check-input" type="radio" name="mode_customer" id="modeTerdaftar"
+                                    value="terdaftar">
                                 <label class="form-check-label" for="modeTerdaftar">Pelanggan Terdaftar</label>
                             </div>
                         </div>
@@ -137,13 +139,10 @@
                             <label class="form-label">Pilih Customer</label>
                             <select class="form-select" id="select_customer">
                                 <option value="">-- Pilih Customer --</option>
-                                @foreach($customers as $c)
-                                    <option value="{{ $c->id }}"
-                                        data-nama="{{ $c->nama }}"
-                                        data-telepon="{{ $c->telepon }}"
-                                        data-email="{{ $c->email }}"
-                                        data-jenis="{{ $c->jenis_pelanggan }}"
-                                        data-alamat="{{ $c->alamat }}">
+                                @foreach ($customers as $c)
+                                    <option value="{{ $c->id }}" data-nama="{{ $c->nama }}"
+                                        data-telepon="{{ $c->telepon }}" data-email="{{ $c->email }}"
+                                        data-jenis="{{ $c->jenis_pelanggan }}" data-alamat="{{ $c->alamat }}">
                                         {{ $c->nama }} - {{ $c->telepon }}
                                     </option>
                                 @endforeach
@@ -164,7 +163,7 @@
                             <label class="form-label">Email (Opsional)</label>
                             <input type="email" class="form-control" name="email" id="email">
                         </div>
-                        
+
                         <div class="col-12">
                             <label class="form-label">Alamat</label>
                             <textarea class="form-control" name="alamat" id="alamat" rows="3" required></textarea>
@@ -326,7 +325,8 @@
                         </div>
                         <div class="col-md-4 d-none">
                             <label class="form-label">Diskon (Rp)</label>
-                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input" value="0">
+                            <input type="text" name="diskon" id="diskon" class="form-control rupiah-input"
+                                value="0">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Tanggal Ambil / Selesai</label>
@@ -881,15 +881,20 @@
         // Quick-access nota button after save
         $(document).on('click', '#btnShowNota', function() {
             if (!savedNotaFile) return;
-            const url = '/nota/' + savedNotaFile;
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = url;
-            document.body.appendChild(iframe);
-            iframe.onload = function() {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            };
+
+            // DEBUG: Log the original file path
+            console.log('DEBUG: Original savedNotaFile:', savedNotaFile);
+
+            // Backend returns full path (e.g., "2025/12/14/thermal/THERMAL-20251214-001-123.pdf")
+            // Frontend prepends base URL to create complete path
+            const url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(savedNotaFile);
+
+            // DEBUG: Log the final URL
+            console.log('DEBUG: Final PDF URL:', url);
+            console.log('DEBUG: Saved nota file:', savedNotaFile);
+
+            // Simple direct approach - open in new window
+            window.open(url, '_blank');
         });
 
         // Cetak langsung ke thermal printer (ESC/POS via server)
@@ -898,14 +903,28 @@
             $.ajax({
                 url: "{{ url('/transaksi/print-thermal') }}/" + savedTransactionId,
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
                 success: function() {
-                    Swal.fire({ icon: 'success', title: 'Terkirim ke Printer', timer: 1200, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Terkirim ke Printer',
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                 },
                 error: function(xhr) {
                     let message = 'Gagal mengirim ke printer thermal.';
-                    try { const json = JSON.parse(xhr.responseText); message = json.message || message; } catch(e){}
-                    Swal.fire({ icon: 'error', title: 'Gagal Cetak', text: message });
+                    try {
+                        const json = JSON.parse(xhr.responseText);
+                        message = json.message || message;
+                    } catch (e) {}
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Cetak',
+                        text: message
+                    });
                 }
             });
         });
@@ -915,14 +934,29 @@
             $.ajax({
                 url: "{{ route('transaksi.printThermal.test') }}",
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
                 success: function(res) {
-                    Swal.fire({ icon: 'success', title: 'Printer Terdeteksi', text: res.printer || 'OK', timer: 1500, showConfirmButton: false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Printer Terdeteksi',
+                        text: res.printer || 'OK',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 },
                 error: function(xhr) {
                     let message = 'Tidak dapat terhubung ke printer thermal.';
-                    try { const json = JSON.parse(xhr.responseText); message = json.message || message; } catch(e){}
-                    Swal.fire({ icon: 'error', title: 'Koneksi Gagal', text: message });
+                    try {
+                        const json = JSON.parse(xhr.responseText);
+                        message = json.message || message;
+                    } catch (e) {}
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Koneksi Gagal',
+                        text: message
+                    });
                 }
             });
         });
@@ -980,7 +1014,9 @@
         $(document).on('change', '#select_customer', function() {
             const opt = $(this).find('option:selected');
             const cid = opt.val();
-            if (!cid) { return; }
+            if (!cid) {
+                return;
+            }
             const nama = opt.data('nama') || '';
             const telepon = opt.data('telepon') || '';
             const email = opt.data('email') || '-';
@@ -1006,7 +1042,11 @@
                 const opt = $('#select_customer option:selected');
                 selectedId = opt.val();
                 if (!selectedId) {
-                    Swal.fire({ icon: 'warning', title: 'Pilih Customer', text: 'Silakan pilih customer terdaftar.' });
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Pilih Customer',
+                        text: 'Silakan pilih customer terdaftar.'
+                    });
                     return;
                 }
                 nama = opt.data('nama') || '';
@@ -1192,7 +1232,8 @@
             const $btnSave = $('#btnSelesaiTransaksi');
             const originalHtml = $btnSave.html();
             $btnSave.data('original-html', originalHtml);
-            $btnSave.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
+            $btnSave.prop('disabled', true).html(
+                '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...');
             calculateTotal();
 
             const payload = {
@@ -1205,18 +1246,18 @@
                 },
                 customer_id: $('#selected_customer_id').val() || null,
                 items: [],
-                    summary: {
-                        biaya_desain: $('#biaya_desain').val(),
-                        diskon: $('#diskon').val(),
-                        tanggal_ambil: $('#tanggal_ambil').val(),
-                        metode_pembayaran: $('#metode_pembayaran').val(),
-                        status_pembayaran: $('#status_pembayaran').val(),
-                        dp_override: $('#dp_override').is(':checked') ? 1 : 0,
-                        dp: $('#dp').val() || 0,
-                        subtotal: window.subtotalTerakhir || 0,
-                        total: $('#total_raw').val(),
-                        bukti_pembayaran: $('#bukti_pembayaran').val() || null
-                    }
+                summary: {
+                    biaya_desain: $('#biaya_desain').val(),
+                    diskon: $('#diskon').val(),
+                    tanggal_ambil: $('#tanggal_ambil').val(),
+                    metode_pembayaran: $('#metode_pembayaran').val(),
+                    status_pembayaran: $('#status_pembayaran').val(),
+                    dp_override: $('#dp_override').is(':checked') ? 1 : 0,
+                    dp: $('#dp').val() || 0,
+                    subtotal: window.subtotalTerakhir || 0,
+                    total: $('#total_raw').val(),
+                    bukti_pembayaran: $('#bukti_pembayaran').val() || null
+                }
             };
 
             $('.mmt-item').each(function() {
@@ -1253,7 +1294,8 @@
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 data: JSON.stringify(payload),
                 success: function(res) {
@@ -1273,17 +1315,21 @@
                         cancelButtonText: 'Tidak'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            const url = '/nota/' + res.nota_file;
-                            const iframe = document.createElement('iframe');
-                            iframe.style.display = 'none';
-                            iframe.src = url;
+                            // DEBUG: Log the file path from response
+                            console.log('DEBUG: nota_file from response:', res.nota_file);
 
-                            document.body.appendChild(iframe);
+                            // Backend returns full path (e.g., "2025/12/14/thermal/THERMAL-20251214-001-123.pdf")
+                            // Frontend prepends base URL to create complete path
+                            const url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(
+                                res
+                                .nota_file);
 
-                            iframe.onload = function() {
-                                iframe.contentWindow.focus();
-                                iframe.contentWindow.print();
-                            };
+                            // DEBUG: Log the final URL
+                            console.log('DEBUG: Final PDF URL after save:', url);
+                            console.log('DEBUG: Nota file from response:', res.nota_file);
+
+                            // Simple direct approach - open in new window
+                            window.open(url, '_blank');
                         } else {
                             Swal.fire({
                                 icon: 'info',
@@ -1315,7 +1361,8 @@
                     });
                     // Restore button so user can retry
                     const $btnSave = $('#btnSelesaiTransaksi');
-                    $btnSave.prop('disabled', false).html($btnSave.data('original-html') || '<i class="bi bi-check2-circle"></i> Selesai & Simpan');
+                    $btnSave.prop('disabled', false).html($btnSave.data('original-html') ||
+                        '<i class="bi bi-check2-circle"></i> Selesai & Simpan');
                     isSubmitting = false;
                 }
             });
@@ -1415,15 +1462,28 @@
             const status = ($('#status_pembayaran').val() || '').toLowerCase();
             const dpMin = Math.round(total * 0.5);
 
-            if (status === 'lunas') return { valid: true };
+            if (status === 'lunas') return {
+                valid: true
+            };
 
             const isOverride = $('#dp_override').is(':checked');
             if (!isOverride && total >= 300000 && dp < dpMin) {
-                return { valid: false, message: `DP minimal adalah 50% dari total (Rp${dpMin.toLocaleString()}).` };
+                return {
+                    valid: false,
+                    message: `DP minimal adalah 50% dari total (Rp${dpMin.toLocaleString()}).`
+                };
             }
-            if (dp <= 0) return { valid: false, message: 'Nominal DP harus lebih dari 0.' };
-            if (dp > total) return { valid: false, message: 'DP tidak boleh melebihi total.' };
-            return { valid: true };
+            if (dp <= 0) return {
+                valid: false,
+                message: 'Nominal DP harus lebih dari 0.'
+            };
+            if (dp > total) return {
+                valid: false,
+                message: 'DP tidak boleh melebihi total.'
+            };
+            return {
+                valid: true
+            };
         }
     </script>
 @endsection

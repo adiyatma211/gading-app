@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('produk_bahans')) {
-            Schema::create('produk_bahans', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('produk_id')->constrained()->onDelete('cascade');
-                $table->string('nama_bahan');
-                $table->string('harga_per_meter');
-                $table->timestamps();
-            });
-        }
+        Schema::create('produk_bahans', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('produk_id')->constrained()->onDelete('cascade');
+            $table->string('nama_bahan');
+            $table->decimal('harga_per_meter', 15, 2);
+            $table->decimal('diskon', 15, 2)->default(0);
+            $table->decimal('total_harga', 15, 2);
+            $table->timestamps();
+        });
     }
 
     /**

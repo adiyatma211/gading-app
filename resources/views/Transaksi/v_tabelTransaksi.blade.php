@@ -39,30 +39,82 @@
                                     <td>{{ $a->tanggal_ambil }}</td>
                                     <td>
                                         @if ($a->nota_file)
-                                            <a href="{{ asset('nota/' . $a->nota_file) }}" target="_blank"
-                                                rel="noopener noreferrer"
-                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
-                                                class="nota-link">
-                                                {{ $a->nota_file }}
-                                            </a>
+                                            {{-- Cek apakah file ada di public folder (old system) --}}
+                                            @if (file_exists(public_path('nota/' . $a->nota_file)))
+                                                <a href="{{ asset('nota/' . $a->nota_file) }}" target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
+                                                    class="nota-link">
+                                                    {{ $a->nota_file }}
+                                                </a>
+                                                {{-- Cek apakah file ada di storage (new system) - PRIMARY PATH FOR THERMAL --}}
+                                            @elseif($a->pdf_storage_path)
+                                                @php
+                                                    $storageService = app(\App\Services\PDFStorageService::class);
+                                                    $thermalPath = $a->pdf_storage_path;
+                                                    $hasThermalFile = $storageService->fileExists($thermalPath);
+                                                @endphp
+                                                @if ($hasThermalFile)
+                                                    <a href="{{ url('/pdf-storage/' . urlencode($thermalPath)) }}"
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
+                                                        class="nota-link">
+                                                        {{ $a->nota_file }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-danger"
+                                                        style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #dc3545;">File
+                                                        Thermal Tidak Ditemukan</span>
+                                                @endif
+                                            @else
+                                                <span class="text-danger"
+                                                    style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #dc3545;">File
+                                                    Thermal Tidak Tersedia</span>
+                                            @endif
                                         @else
                                             <span class="text-muted"
-                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;">Nota
-                                                Belum dibuat</span>
+                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #6c757d;">Nota
+                                                Satu Belum dibuat</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if ($a->nota_file_dua)
-                                            <a href="{{ asset('nota/' . $a->nota_file_dua) }}" target="_blank"
-                                                rel="noopener noreferrer"
-                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
-                                                class="nota-link">
-                                                {{ $a->nota_file_dua }}
-                                            </a>
+                                            {{-- Check in public folder (old system) --}}
+                                            @if (file_exists(public_path('nota/' . $a->nota_file_dua)))
+                                                <a href="{{ asset('nota/' . $a->nota_file_dua) }}" target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
+                                                    class="nota-link">
+                                                    {{ $a->nota_file_dua }}
+                                                </a>
+                                                {{-- Check in pdf_storage_path_invoice (new system) - PRIMARY PATH FOR INVOICE --}}
+                                            @elseif($a->pdf_storage_path_invoice)
+                                                @php
+                                                    $storageService = app(\App\Services\PDFStorageService::class);
+                                                    $invoicePath = $a->pdf_storage_path_invoice;
+                                                    $hasInvoiceFile = $storageService->fileExists($invoicePath);
+                                                @endphp
+                                                @if ($hasInvoiceFile)
+                                                    <a href="{{ url('/pdf-storage/' . urlencode($invoicePath)) }}"
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;"
+                                                        class="nota-link">
+                                                        {{ $a->nota_file_dua }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-danger"
+                                                        style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #dc3545;">File
+                                                        Invoice Tidak Ditemukan</span>
+                                                @endif
+                                            @else
+                                                <span class="text-danger"
+                                                    style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #dc3545;">File
+                                                    Invoice Tidak Tersedia</span>
+                                            @endif
                                         @else
                                             <span class="text-muted"
-                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #007bff;">Nota
-                                                Belum dibuat</span>
+                                                style="display: inline-block; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; text-decoration: none; color: #6c757d;">Nota
+                                                Dua Belum dibuat</span>
                                         @endif
                                     </td>
                                     <td>{{ $a->tanggal_selesai }}</td>
@@ -392,7 +444,8 @@
             // Validasi sederhana (file bukti opsional)
             if (statusTransaksi === 'diambil') {
                 if (!tanggalDiambil || !diambilOleh) {
-                    Swal.fire('Error', 'Harap lengkapi tanggal diambil dan diambil oleh untuk status "Diambil"', 'error');
+                    Swal.fire('Error', 'Harap lengkapi tanggal diambil dan diambil oleh untuk status "Diambil"',
+                        'error');
                     return;
                 }
             }
@@ -417,11 +470,7 @@
                 payload.append('kekurangan', kekurangan);
             }
 
-            // Tampilkan isi payload di console (untuk debugging)
-            console.log('--- Payload FormData ---');
-            for (let [key, value] of payload.entries()) {
-                console.log(key, ':', value);
-            }
+            // Debugging removed for cleaner code
 
             // Kirim ke server dengan AJAX
             $.ajax({
@@ -474,7 +523,8 @@
             if (buktiPengambilanInput && previewContainer && imagePreview) {
                 // Tangani event saat file dipilih
                 buktiPengambilanInput.addEventListener('change', function(event) {
-                    const file = event.target && event.target.files ? event.target.files[0] : null; // Ambil file yang dipilih
+                    const file = event.target && event.target.files ? event.target.files[0] :
+                        null; // Ambil file yang dipilih
 
                     if (file) {
                         // Tampilkan container pratinjau

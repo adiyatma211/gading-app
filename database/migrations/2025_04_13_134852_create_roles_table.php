@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('roles')) {
-            Schema::create('roles', function (Blueprint $table) {
-                $table->id();
-                $table->string('roles');
-                $table->string('keterangan');
-                $table->timestamps();
-            });
-        }
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('rolesName');
+            $table->string('keterangan');
+            $table->integer('deleteSts')->default(0);
+            $table->timestamps();
+        });
     }
 
     /**
