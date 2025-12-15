@@ -34,7 +34,7 @@ class TransactionsController extends Controller
     public function detailTransaksi($id)
     {
         try {
-            $transaksi = transactions::with(['customer', 'items.produkBahan'])->findOrFail($id);
+            $transaksi = transactions::with(['customer', 'items.produk'])->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -264,7 +264,7 @@ class TransactionsController extends Controller
 
                     if ($totalHarga < 0) $totalHarga = 0;
 
-                    $newItem = TransactionItems::create([
+                    $newItem = transactionitems::create([
                         'transaction_id'    => $transaction->id,
                         'tipe_produk_id'    => $tipe,
                         'panjang'           => $panjang,
@@ -329,7 +329,7 @@ class TransactionsController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error saat simpan transaksi', ['error' => $e->getMessage()]);
+            Log::error('Error saat simpan transaksi', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal menyimpan transaksi: ' . $e->getMessage()
@@ -339,7 +339,7 @@ class TransactionsController extends Controller
 
     private function generateNotaFile($transaction): string
 {
-    $transaction = Transactions::with(['customer', 'items.produk'])->find($transaction->id);
+    $transaction = transactions::with(['customer', 'items.produk'])->find($transaction->id);
     $custName = $transaction->customer->nama;
     $logoPath = public_path('assets/logoSVG.SVG');
     $logoPath2 = public_path('assets/logoSVG.svg');
@@ -410,7 +410,7 @@ class TransactionsController extends Controller
     ]);
 
     // === 5. Simpan ke history_nota hanya file utama ===
-    $lastId = Transactions::max('id') + 1;
+    $lastId = transactions::max('id') + 1;
     $nomorFaktur = 'FK-' . str_pad($lastId, 3, '0', STR_PAD_LEFT) . '/' . date('m') . '/' . date('Y');
 
     historynota::create([
@@ -580,7 +580,7 @@ private function compressPDFAsync(string $filePath1, string $filePath2): void
             ], 422);
         }
 
-        $trx = Transactions::with(['customer', 'items.produk'])->findOrFail($id);
+        $trx = transactions::with(['customer', 'items.produk'])->findOrFail($id);
 
         try {
             $connector = new WindowsPrintConnector($printerName);
@@ -679,6 +679,15 @@ private function compressPDFAsync(string $filePath1, string $filePath2): void
                 'errors' => $validator->errors(),
                 'input' => $request->all()
             ]);
+
+            // Check if the validation error is specifically about the transaction not existing
+            if ($validator->errors()->has('id_transaksi')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan.'
+                ], 404);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
