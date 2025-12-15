@@ -39,30 +39,120 @@ Route::get('/nota/{filename}', function ($filename) {
     return response()->file($path);
 });
 
+// Route untuk mengakses legacy PDF dari public/nota directory
+Route::get('/legacy-pdf/{filename}', function ($filename) {
+    // Security check - hanya izinkan filename dengan format tertentu
+    if (!preg_match('/^[a-zA-Z0-9_\-\.]+\.(pdf|PDF)$/', $filename)) {
+        \Log::error('Legacy PDF Access Denied - Invalid Filename Format', [
+            'filename' => $filename,
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
+        abort(403, 'Access denied - Invalid filename format.');
+    }
+
+    $path = public_path('nota/' . $filename);
+
+    // Check if file exists
+    if (!file_exists($path)) {
+        \Log::error('Legacy PDF File Not Found', [
+            'filename' => $filename,
+            'path' => $path,
+            'ip' => request()->ip()
+        ]);
+        abort(404, 'PDF file not found.');
+    }
+
+    // Check if file is actually a PDF
+    $mimeType = mime_content_type($path);
+    if ($mimeType !== 'application/pdf') {
+        \Log::error('Legacy PDF Access Denied - Not a PDF File', [
+            'filename' => $filename,
+            'mime_type' => $mimeType,
+            'ip' => request()->ip()
+        ]);
+        abort(403, 'Access denied - File is not a PDF.');
+    }
+
+    \Log::info('Legacy PDF Access Success', [
+        'filename' => $filename,
+        'file_size' => filesize($path),
+        'ip' => request()->ip()
+    ]);
+
+    return response()->file($path, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        'Cache-Control' => 'public, max-age=86400', // Cache for 1 day
+    ]);
+})->where('filename', '.*');
+
 // Route untuk mengakses PDF dari storage (hanya untuk user yang terautentikasi)
 Route::middleware(['auth'])->group(function () {
     Route::get('/pdf-storage/{path}', function ($path) {
+        // DEBUG: Log incoming request
+        \Log::info('PDF Storage Access Attempt', [
+            'original_path' => $path,
+            'decoded_path' => urldecode($path),
+            'user_authenticated' => auth()->check(),
+            'user_id' => auth()->id(),
+            'timestamp' => now()
+        ]);
+
         // Decode path yang di-encode
         $path = urldecode($path);
 
         // Remove trailing slash if present
         $path = rtrim($path, '/');
 
+        // DEBUG: Log processed path
+        \Log::info('PDF Storage Processed Path', [
+            'processed_path' => $path,
+            'regex_pattern' => '/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/(thermal|invoice|THERMAL|INVOICE)\/[^\/]+\.pdf$/',
+            'regex_match' => preg_match('/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/(thermal|invoice|THERMAL|INVOICE)\/[^\/]+\.pdf$/', $path)
+        ]);
+
         // Security check - hanya izinkan path dengan format tertentu
         if (!preg_match('/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/(thermal|invoice|THERMAL|INVOICE)\/[^\/]+\.pdf$/', $path)) {
-            abort(403, 'Access denied.');
+            \Log::error('PDF Storage Access Denied - Invalid Path Format', [
+                'path' => $path,
+                'user_id' => auth()->id()
+            ]);
+            abort(403, 'Access denied - Invalid path format.');
         }
 
         $storageService = app(\App\Services\PDFStorageService::class);
 
-        if (!$storageService->fileExists($path)) {
+        // DEBUG: Check file existence
+        $fileExists = $storageService->fileExists($path);
+        \Log::info('PDF Storage File Check', [
+            'path' => $path,
+            'file_exists' => $fileExists,
+            'storage_disk' => 'pdf_storage'
+        ]);
+
+        if (!$fileExists) {
+            \Log::error('PDF Storage File Not Found', [
+                'path' => $path,
+                'user_id' => auth()->id()
+            ]);
             abort(404, 'PDF file not found.');
         }
 
         $fileContent = $storageService->getPDF($path);
         if (!$fileContent) {
+            \Log::error('PDF Storage File Cannot Be Read', [
+                'path' => $path,
+                'user_id' => auth()->id()
+            ]);
             abort(404, 'PDF file not found or cannot be read.');
         }
+
+        \Log::info('PDF Storage Access Success', [
+            'path' => $path,
+            'file_size' => strlen($fileContent),
+            'user_id' => auth()->id()
+        ]);
 
         return response($fileContent)
             ->header('Content-Type', 'application/pdf')

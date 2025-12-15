@@ -321,7 +321,7 @@
                         <div class="col-md-4">
                             <label class="form-label">Biaya Desain (Opsional)</label>
                             <input type="text" name="biaya_desain" id="biaya_desain"
-                                class="form-control rupiah-input" value="0">
+                                class="form-control rupiah-input" value="0" placeholder="0">
                         </div>
                         <div class="col-md-4 d-none">
                             <label class="form-label">Diskon (Rp)</label>
@@ -885,16 +885,83 @@
             // DEBUG: Log the original file path
             console.log('DEBUG: Original savedNotaFile:', savedNotaFile);
 
-            // Backend returns full path (e.g., "2025/12/14/thermal/THERMAL-20251214-001-123.pdf")
-            // Frontend prepends base URL to create complete path
-            const url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(savedNotaFile);
+            // Check if the file path is in old format (starts with "nota/")
+            let url;
+            if (savedNotaFile.startsWith('nota/')) {
+                // Old format: use legacy-pdf endpoint
+                const filename = savedNotaFile.replace('nota/', '');
+                url = "{{ url('/legacy-pdf') }}" + '/' + encodeURIComponent(filename);
+                console.log('DEBUG: Using legacy PDF endpoint for old format file');
+            } else {
+                // New format: use pdf-storage endpoint
+                url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(savedNotaFile);
+                console.log('DEBUG: Using pdf-storage endpoint for new format file');
+            }
 
             // DEBUG: Log the final URL
             console.log('DEBUG: Final PDF URL:', url);
             console.log('DEBUG: Saved nota file:', savedNotaFile);
 
-            // Simple direct approach - open in new window
-            window.open(url, '_blank');
+            // AJAX approach to maintain authentication context
+            console.log('DEBUG: Making AJAX request for PDF viewing...');
+            $.ajax({
+                url: url,
+                method: 'GET',
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                beforeSend: function(xhr) {
+                    console.log('DEBUG: Sending AJAX request with authentication context');
+                },
+                success: function(data, status, xhr) {
+                    console.log('DEBUG: AJAX Success - Status:', status);
+                    console.log('DEBUG: Response headers:', xhr.getAllResponseHeaders());
+                    console.log('DEBUG: Content type:', xhr.getResponseHeader('Content-Type'));
+                    console.log('DEBUG: Blob size:', data.size, 'bytes');
+                    
+                    // Create object URL from blob and open in new window
+                    const blobUrl = URL.createObjectURL(data);
+                    console.log('DEBUG: Created blob URL:', blobUrl);
+                    
+                    // Open in new window
+                    const newWindow = window.open(blobUrl, '_blank');
+                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                        console.error('DEBUG: Popup blocked or failed to open');
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Popup Diblokir',
+                            text: 'Browser memblokir popup. Silakan izinkan popup untuk situs ini atau coba lagi.',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        console.log('DEBUG: PDF opened successfully in new window');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('DEBUG: AJAX Error - Status:', status);
+                    console.log('DEBUG: Error:', error);
+                    console.log('DEBUG: Response text:', xhr.responseText);
+                    console.log('DEBUG: Response status:', xhr.status);
+                    console.log('DEBUG: Response headers:', xhr.getAllResponseHeaders());
+                    
+                    // Show user-friendly error message
+                    let errorMessage = 'Terjadi kesalahan saat membuka file PDF. Silakan coba lagi.';
+                    if (xhr.status === 403) {
+                        errorMessage = 'Akses ditolak. Sesi Anda mungkin telah kadaluarsa. Silakan refresh halaman dan coba lagi.';
+                    } else if (xhr.status === 404) {
+                        errorMessage = 'File PDF tidak ditemukan. File mungkin telah dihapus atau dipindahkan.';
+                    } else if (xhr.status >= 500) {
+                        errorMessage = 'Terjadi kesalahan pada server. Silakan hubungi administrator.';
+                    }
+                    
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Membuka PDF',
+                        text: errorMessage,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
         });
 
         // Cetak langsung ke thermal printer (ESC/POS via server)
@@ -1317,19 +1384,86 @@
                         if (result.isConfirmed) {
                             // DEBUG: Log the file path from response
                             console.log('DEBUG: nota_file from response:', res.nota_file);
-
-                            // Backend returns full path (e.g., "2025/12/14/thermal/THERMAL-20251214-001-123.pdf")
-                            // Frontend prepends base URL to create complete path
-                            const url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(
-                                res
-                                .nota_file);
+                            
+                            // Check if the file path is in old format (starts with "nota/")
+                            let url;
+                            if (res.nota_file.startsWith('nota/')) {
+                                // Old format: use legacy-pdf endpoint
+                                const filename = res.nota_file.replace('nota/', '');
+                                url = "{{ url('/legacy-pdf') }}" + '/' + encodeURIComponent(filename);
+                                console.log('DEBUG: Using legacy PDF endpoint for old format file after save');
+                            } else {
+                                // New format: use pdf-storage endpoint
+                                url = "{{ url('/pdf-storage') }}" + '/' + encodeURIComponent(res.nota_file);
+                                console.log('DEBUG: Using pdf-storage endpoint for new format file after save');
+                            }
 
                             // DEBUG: Log the final URL
                             console.log('DEBUG: Final PDF URL after save:', url);
                             console.log('DEBUG: Nota file from response:', res.nota_file);
 
-                            // Simple direct approach - open in new window
-                            window.open(url, '_blank');
+                            console.log('DEBUG: Encoded file path:', encodeURIComponent(res.nota_file));
+
+                            // Test URL with AJAX first to see response
+                            console.log('DEBUG: Making AJAX request for PDF after save...');
+                            $.ajax({
+                                url: url,
+                                method: 'GET',
+                                xhrFields: {
+                                    responseType: 'blob'
+                                },
+                                beforeSend: function(xhr) {
+                                    console.log('DEBUG: Sending AJAX request with authentication context after save');
+                                },
+                                success: function(data, status, xhr) {
+                                    console.log('DEBUG: AJAX Success after save - Status:', status);
+                                    console.log('DEBUG: Response headers:', xhr.getAllResponseHeaders());
+                                    console.log('DEBUG: Content type:', xhr.getResponseHeader('Content-Type'));
+                                    console.log('DEBUG: Blob size:', data.size, 'bytes');
+                                    
+                                    // Create object URL from blob and open in new window
+                                    const blobUrl = URL.createObjectURL(data);
+                                    console.log('DEBUG: Created blob URL after save:', blobUrl);
+                                    
+                                    // Open in new window
+                                    const newWindow = window.open(blobUrl, '_blank');
+                                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                                        console.error('DEBUG: Popup blocked or failed to open after save');
+                                        Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Popup Diblokir',
+                                            text: 'Browser memblokir popup. Silakan izinkan popup untuk situs ini atau coba lagi.',
+                                            confirmButtonText: 'OK'
+                                        });
+                                    } else {
+                                        console.log('DEBUG: PDF opened successfully in new window after save');
+                                    }
+                                },
+                                error: function(xhr, status, error) {
+                                    console.log('DEBUG: AJAX Error after save - Status:', status);
+                                    console.log('DEBUG: Error:', error);
+                                    console.log('DEBUG: Response text:', xhr.responseText);
+                                    console.log('DEBUG: Response status:', xhr.status);
+                                    console.log('DEBUG: Response headers:', xhr.getAllResponseHeaders());
+                                    
+                                    // Show user-friendly error message
+                                    let errorMessage = 'Terjadi kesalahan saat membuka file PDF. Silakan coba lagi.';
+                                    if (xhr.status === 403) {
+                                        errorMessage = 'Akses ditolak. Sesi Anda mungkin telah kadaluarsa. Silakan refresh halaman dan coba lagi.';
+                                    } else if (xhr.status === 404) {
+                                        errorMessage = 'File PDF tidak ditemukan. File mungkin telah dihapus atau dipindahkan.';
+                                    } else if (xhr.status >= 500) {
+                                        errorMessage = 'Terjadi kesalahan pada server. Silakan hubungi administrator.';
+                                    }
+                                    
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Gagal Membuka PDF',
+                                        text: errorMessage,
+                                        confirmButtonText: 'OK'
+                                    });
+                                }
+                            });
                         } else {
                             Swal.fire({
                                 icon: 'info',
@@ -1339,7 +1473,6 @@
                                 showConfirmButton: false
                             });
                         }
-
                     });
 
                     console.log('Response:', res);

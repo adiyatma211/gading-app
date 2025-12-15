@@ -77,7 +77,19 @@
   async function action(endpoint) {
     try {
       const store_id = storeSelect.value;
-      if (!store_id) return alert('Pilih toko terlebih dahulu');
+      if (!store_id) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Peringatan',
+          text: 'Pilih toko terlebih dahulu',
+          toast: true,
+          position: 'top-right',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+        return;
+      }
       geoStatus.textContent = 'Mengambil lokasi...';
       const {lat, lng} = await getPosition();
       geoStatus.textContent = `Lokasi: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
@@ -88,10 +100,32 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Gagal');
-      alert(data.message || 'Berhasil');
+      
+      // Success notification
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: data.message || 'Presensi berhasil dicatat',
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      
       fetchHistory();
     } catch (e) {
-      alert(e.message || e);
+      // Error notification
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: e.message || e,
+        toast: true,
+        position: 'top-right',
+        showConfirmButton: false,
+        timer: 5000,
+        timerProgressBar: true
+      });
     }
   }
 

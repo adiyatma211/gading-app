@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast Notification Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Toast Notification Test</h1>
+        <p>Testing the toast notification implementation for Presensi module</p>
+        
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <button class="btn btn-success w-100" onclick="showSuccessToast()">Success Toast</button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-danger w-100" onclick="showErrorToast()">Error Toast</button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-warning w-100" onclick="showWarningToast()">Warning Toast</button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-info w-100" onclick="showInfoToast()">Info Toast</button>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <button class="btn btn-primary w-100" onclick="showConfirmDialog()">Test Confirm Dialog</button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-secondary w-100" onclick="testPresensiFlow()">Test Presensi Flow</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSuccessToast() {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Presensi berhasil dicatat',
+                toast: true,
+                position: 'top-right',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+        
+        function showErrorToast() {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Gagal mencatat presensi',
+                toast: true,
+                position: 'top-right',
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true
+            });
+        }
+        
+        function showWarningToast() {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan',
+                text: 'Pilih toko terlebih dahulu',
+                toast: true,
+                position: 'top-right',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+        
+        function showInfoToast() {
+            Swal.fire({
+                icon: 'info',
+                title: 'Info',
+                text: 'Informasi tambahan',
+                toast: true,
+                position: 'top-right',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+        
+        function showConfirmDialog() {
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Apakah Anda yakin ingin menghapus data ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Data berhasil dihapus',
+                        toast: true,
+                        position: 'top-right',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                }
+            });
+        }
+        
+        function testPresensiFlow() {
+            // Simulate the presensi flow
+            showWarningToast();
+            setTimeout(() => {
+                showSuccessToast();
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
