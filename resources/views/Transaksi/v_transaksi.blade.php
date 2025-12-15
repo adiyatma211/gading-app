@@ -321,7 +321,7 @@
                         <div class="col-md-4">
                             <label class="form-label">Biaya Desain (Opsional)</label>
                             <input type="text" name="biaya_desain" id="biaya_desain"
-                                class="form-control rupiah-input" value="0" placeholder="0">
+                                class="form-control rupiah-input" value="0"  placeholder="0">
                         </div>
                         <div class="col-md-4 d-none">
                             <label class="form-label">Diskon (Rp)</label>
